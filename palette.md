@@ -1,29 +1,10 @@
-# PikFlix: Natural Language Movie Discovery Platform
+# PikFlix Theme Implementation Guide
 
-![PikFlix Banner](https://api.placeholder.com/1200x300)
-
-PikFlix is an innovative web application that transforms how users discover movies through natural language processing. Instead of rigid filters and categories, users can describe what they're looking for in everyday language—whether it's a specific mood, theme, plot element, or cinematic style—and receive personalized movie recommendations.
-
-## 🎬 Features
-
-- **Natural Language Search**: Describe what you want to watch in plain English
-- **Smart Recommendations**: Powered by AI to understand complex search queries
-- **Customizable Themes**: Choose from six visually striking color schemes
-- **Visual Presentation**: Attractive movie cards with posters and key information
-- **Streaming Links**: Direct links to where each movie can be watched
-- **Responsive Design**: Seamless experience across desktop and mobile
-
-## 🛠️ Tech Stack
-
-- **Next.js (App Router)**: For server-side rendering and optimal performance
-- **TypeScript**: For type safety and improved developer experience
-- **Tailwind CSS 3.3**: For responsive, utility-first styling
-- **React 18**: For building interactive UI components
-- **TMDB API**: For comprehensive movie data
-
-## 🎨 Color Themes
+## Overview
 
 PikFlix uses a theme-based styling approach that allows users to select from six distinct color palettes. Each theme has standardized color roles that must be consistently applied throughout the application. This document serves as a comprehensive reference for implementing these themes in your code.
+
+## Color Role Standardization
 
 All themes use the following standardized color roles:
 
@@ -36,6 +17,8 @@ All themes use the following standardized color roles:
 | `surface` | Secondary background color for cards, containers, and UI components |
 | `text` | Primary text color for most content |
 | `text-muted` | Secondary text color for less emphasized content (captions, helper text) |
+
+## Theme Palettes
 
 ### 1. Vintage Prometheus
 A warm, earthy palette with deep blue backgrounds and terracotta accents, evoking retro futurism.
@@ -147,104 +130,111 @@ Available animations for enhancing the UI:
 - `animate-gradient-x`: Smooth horizontal gradient transition (15s cycle)
 - `animate-pulse-slow`: Subtle pulsing effect (4s cycle)
 
-## 🏗️ Project Structure
+## Implementation Guidelines
 
+### Dynamic Theme Implementation
+
+When implementing components, use theme-agnostic class patterns:
+
+```tsx
+// Component example with theme-aware styling
+const Button = ({ children, theme = 'vintage' }) => {
+  return (
+    <button 
+      className={`
+        bg-${theme}-primary 
+        hover:bg-${theme}-accent 
+        text-${theme}-text 
+        px-4 py-2 rounded-md 
+        transition-colors duration-200
+      `}
+    >
+      {children}
+    </button>
+  );
+};
 ```
-pikflix/
-├── public/            # Static assets
-├── src/
-│   ├── app/           # App Router pages
-│   │   ├── page.tsx   # Homepage with search interface
-│   │   └── layout.tsx # Main layout component
-│   ├── components/    # Reusable UI components
-│   │   ├── MovieCard.tsx
-│   │   ├── SearchBar.tsx
-│   │   ├── MovieDetail.tsx
-│   │   └── ThemeSelector.tsx
-│   ├── lib/           # Utility functions
-│   │   ├── api.ts     # TMDB API functions
-│   │   └── themes.ts  # Theme management
-│   ├── hooks/         # Custom React hooks
-│   └── types/         # TypeScript type definitions
-├── tailwind.config.js # Tailwind configuration with themes
-└── next.config.js     # Next.js configuration
+<!-- 
+### Layout Examples
+
+**Page Layout:**
+```tsx
+<div className={`min-h-screen bg-${theme}-background bg-${pattern}`}>
+  <header className={`bg-${theme}-surface py-4`}>
+    <h1 className={`text-${theme}-primary font-bold text-2xl`}>PikFlix</h1>
+  </header>
+  <main className="container mx-auto p-4">
+    {/* Content */}
+  </main>
+</div>
 ```
 
-## 🚀 Getting Started
+**Movie Card:**
+```tsx
+<div className={`
+  bg-${theme}-surface 
+  rounded-lg overflow-hidden 
+  shadow-lg hover:shadow-xl
+  transition-shadow duration-300
+`}>
+  <img src={poster} alt={title} className="w-full h-auto" />
+  <div className="p-4">
+    <h3 className={`text-${theme}-text font-bold text-lg`}>{title}</h3>
+    <p className={`text-${theme}-text-muted text-sm`}>{year}</p>
+    <div className={`mt-2 flex items-center`}>
+      <span className={`
+        bg-${theme}-accent 
+        text-${theme}-text 
+        text-xs font-bold 
+        px-2 py-1 rounded
+      `}>
+        {rating}
+      </span>
+    </div>
+  </div>
+</div>
+```
 
-### Prerequisites
+**Search Bar:**
+```tsx
+<div className={`
+  bg-${theme}-surface 
+  rounded-full 
+  flex items-center 
+  p-2 shadow-md
+`}>
+  <input
+    type="text"
+    placeholder="Describe your perfect movie..."
+    className={`
+      bg-transparent 
+      text-${theme}-text 
+      placeholder-${theme}-text-muted 
+      flex-grow px-4 py-2 
+      focus:outline-none
+    `}
+  />
+  <button className={`
+    bg-${theme}-primary 
+    text-${theme}-text 
+    px-6 py-2 rounded-full
+    hover:bg-${theme}-accent transition-colors
+  `}>
+    Search
+  </button>
+</div>
+``` -->
 
-- Node.js 18 or newer
-- npm or yarn
+## Important Considerations
 
-### Installation
+1. **Accessibility**: Ensure text has sufficient contrast against its background for all themes (particularly important for Keppel and Polish themes).
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/pikflix.git
-   cd pikflix
-   ```
+2. **Responsive Design**: Test all themes across different screen sizes to ensure color transitions and patterns scale appropriately.
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+3. **Performance**: When switching themes, try to minimize DOM updates by isolating theme-specific styles to container components when possible.
 
-3. Create a `.env.local` file in the root directory and add your TMDB API key:
-   ```
-   TMDB_API_KEY=your_api_key_here
-   ```
+4. **Testing**: Include visual regression testing for each theme to catch any styling issues during development.
 
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+5. **Consistency**: Always use the standardized color roles rather than directly referencing hex values to maintain theme switchability.
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 📋 Usage
-
-1. Select your preferred theme from the theme selector
-2. Enter a natural language query in the search bar (e.g., "dystopian sci-fi with female protagonists")
-3. Browse the recommended movies that match your criteria
-4. Click on a movie card to view more details
-5. Follow streaming links to watch the movie on available platforms
-
-## 📱 Responsive Design
-
-PikFlix is designed to work beautifully on devices of all sizes:
-- **Desktop**: Full-featured interface with grid layout
-- **Tablet**: Adaptive grid with optimized spacing
-- **Mobile**: Stack layout with touch-friendly controls
-
-## 🧠 AI-Powered Recommendations
-
-The recommendation engine uses natural language processing to understand:
-- Genre preferences
-- Mood and tone
-- Plot elements and themes
-- Character archetypes
-- Cinematic styles
-
-## 🔜 Roadmap
-
-- User accounts and favorites
-- Social sharing features
-- Personalized recommendations based on viewing history
-- Advanced filtering options
-- Dark/light mode toggles for each theme
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgements
-
-- [The Movie Database (TMDB)](https://www.themoviedb.org/) for their comprehensive API
-- [Next.js](https://nextjs.org/) for the fantastic React framework
-- [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
-- [TypeScript](https://www.typescriptlang.org/) for the type safety
+By following these guidelines, all UI elements in PikFlix will maintain consistent styling across different themes while preserving the unique character of each color palette.
