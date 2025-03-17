@@ -1,9 +1,20 @@
 // components/ThemeSelector.tsx
 import React from 'react';
 import { useTheme } from '@/lib/ThemeContext';
+import { useEffect } from 'react';
 
 const ThemeSelector: React.FC = () => {
     const { theme, setTheme } = useTheme();
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        // Force a repaint to ensure the slider position updates
+        const slider = document.querySelector('.theme-slider');
+        if (slider) {
+            // Trigger layout recalculation
+            window.getComputedStyle(slider).getPropertyValue('left');
+        }
+    }, [theme]);
     
     // Calculate proper slider position to align with SVGs
     const getSliderPosition = () => {
@@ -25,7 +36,7 @@ const ThemeSelector: React.FC = () => {
                 
                 {/* Circular indicator that moves between positions */}
                 <div 
-                    className="absolute top-[3px] h-8 w-8 rounded-full transition-all duration-300 ease-out transform -translate-x-1/2"
+                    className="absolute top-[3px] h-8 w-8 rounded-full transition-all duration-300 ease-out transform -translate-x-1/2 theme-slider"
                     style={{ 
                         left: getSliderPosition(),
                         background: 'linear-gradient(to bottom, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',

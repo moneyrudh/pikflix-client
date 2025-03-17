@@ -96,6 +96,24 @@ a {
   to { transform: translateY(0); }
 }
 
+/* Add this to globals.css for the animation fix */
+
+@keyframes moveToTop {
+  from {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  to {
+    top: 5%;
+    transform: translateY(0);
+  }
+}
+
+.animate-to-top {
+  animation: moveToTop 1000ms ease-in-out forwards;
+  will-change: transform, top;
+}
+
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;
@@ -104,4 +122,24 @@ a {
   .animate-slide-up {
     animation: slideUp 0.4s ease-out;
   }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.2) 25%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    rgba(255, 255, 255, 0.2) 75%, 
+    rgba(255, 255, 255, 0.1) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }

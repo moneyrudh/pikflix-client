@@ -21,6 +21,74 @@ PikFlix is an innovative web application that transforms how users discover movi
 - **React 18**: For building interactive UI components
 - **TMDB API**: For comprehensive movie data
 
+## TMDB Movie JSON structure
+
+```
+{
+  "adult": false,
+  "backdrop_path": "/path/to/backdrop.jpg",
+  "belongs_to_collection": null,
+  "budget": 150000000,
+  "genres": [
+    {
+      "id": 28,
+      "name": "Action"
+    },
+    {
+      "id": 12,
+      "name": "Adventure"
+    },
+    {
+      "id": 878,
+      "name": "Science Fiction"
+    }
+  ],
+  "homepage": "https://www.movie-website.com",
+  "id": 550,
+  "imdb_id": "tt1234567",
+  "original_language": "en",
+  "original_title": "Movie Title",
+  "overview": "A brief description of the movie plot and storyline.",
+  "popularity": 123.456,
+  "poster_path": "/path/to/poster.jpg",
+  "production_companies": [
+    {
+      "id": 1,
+      "logo_path": "/path/to/company_logo.png",
+      "name": "Production Company Name",
+      "origin_country": "US"
+    }
+  ],
+  "production_countries": [
+    {
+      "iso_3166_1": "US",
+      "name": "United States of America"
+    }
+  ],
+  "release_date": "2023-03-15",
+  "revenue": 750000000,
+  "runtime": 120,
+  "spoken_languages": [
+    {
+      "english_name": "English",
+      "iso_639_1": "en",
+      "name": "English"
+    },
+    {
+      "english_name": "Spanish",
+      "iso_639_1": "es",
+      "name": "Español"
+    }
+  ],
+  "status": "Released",
+  "tagline": "A catchy tagline for the movie.",
+  "title": "Movie Title",
+  "video": false,
+  "vote_average": 7.8,
+  "vote_count": 12345
+}
+```
+
 ## 🎨 Color Themes
 
 PikFlix uses a theme-based styling approach that allows users to select from six distinct color palettes. Each theme has standardized color roles that must be consistently applied throughout the application. This document serves as a comprehensive reference for implementing these themes in your code.

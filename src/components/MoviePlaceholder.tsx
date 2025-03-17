@@ -7,8 +7,8 @@ interface MoviePlaceholderProps {
 
 const MoviePlaceholder: React.FC<MoviePlaceholderProps> = ({ title }) => {
   return (
-    <div className="w-full h-full flex items-center justify-center bg-theme-surface/50 p-4">
-      <div className="text-center">
+    <div className="relative aspect-[2/3] w-full flex items-center justify-center bg-theme-surface/50">
+      <div className="text-center p-4">
         <svg 
           className="w-12 h-12 mx-auto mb-4 text-theme-text-muted opacity-40" 
           fill="currentColor" 
