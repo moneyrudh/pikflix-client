@@ -2,15 +2,17 @@
 import React from 'react';
 import Image from 'next/image';
 import MoviePlaceholder from './MoviePlaceholder';
+import { Movie } from '@/types/movie';
 
 interface MovieCardProps {
   id: number;
   title: string;
   posterPath: string | null;
   releaseDate: string | null;
+  onClick: (movieId: number) => void;
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({ id, title, posterPath, releaseDate }) => {
+const MovieCard: React.FC<MovieCardProps> = ({ id, title, posterPath, releaseDate, onClick }) => {
   // Extract year from release date
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
   
@@ -18,8 +20,24 @@ const MovieCard: React.FC<MovieCardProps> = ({ id, title, posterPath, releaseDat
   const hasImage = posterPath !== null && posterPath !== '';
   const imageUrl = hasImage ? `https://image.tmdb.org/t/p/w500${posterPath}` : '';
   
+  const handleClick = () => {
+    onClick(id);
+  };
+  
   return (
-    <div className="bg-theme-surface rounded-lg overflow-hidden shadow-md h-full transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group">
+    <div 
+      className="bg-theme-surface rounded-lg overflow-hidden shadow-md h-full transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer"
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${title}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+    >
       <div className="relative aspect-[2/3] w-full">
         {hasImage ? (
           <>

@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
+import MovieDetailsPanel from '@/components/MovieDetailsPanel';
 import Spinner from '@/components/Spinner';
 import { Movie } from '@/types/movie';
 
@@ -12,11 +13,16 @@ export default function Home() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [isSearching, setIsSearching] = useState(false);
 	const [hasSearched, setHasSearched] = useState(false);
-	// Use a single state for UI transitions
 	const [uiState, setUiState] = useState<'initial' | 'animating' | 'searched'>('initial');
-	
 	const [movies, setMovies] = useState<Movie[] | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const firstLoadRef = useRef(true);
+
+	// New state for movie details panel
+	const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
+	const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
+	const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+	
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -24,13 +30,18 @@ export default function Home() {
 	// Check for query in URL params on initial load
 	useEffect(() => {
 		const queryParam = searchParams.get('query');
-		if (queryParam) {
-			setSearchQuery(queryParam);
-			setUiState('searched');
-			setHasSearched(true);
-			performSearch(queryParam);
+		// Only perform search on first load, not on every URL change
+		if (queryParam && !hasSearched) {
+		  setSearchQuery(queryParam);
+		  setUiState('searched');
+		  setHasSearched(true);
+		  performSearch(queryParam);
+		} else if (queryParam && hasSearched) {
+		  // Just update the search query state without re-searching
+		  setSearchQuery(queryParam);
+		  setUiState('searched');
 		}
-	}, [searchParams]);
+	}, [searchParams, hasSearched]);
 
 	// Add event listener for the "/" key
 	useEffect(() => {
@@ -44,6 +55,11 @@ export default function Home() {
 				e.preventDefault();
 				searchInputRef.current?.focus();
 			}
+			
+			// Close details panel on Escape key
+			if (e.key === "Escape" && isDetailsPanelOpen) {
+				closeDetailsPanel();
+			}
 		};
 
 		// Add the event listener to the window
@@ -53,10 +69,74 @@ export default function Home() {
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
 		};
-	}, []);
+	}, [isDetailsPanelOpen]);
+
+	// Find selected movie when ID changes
+	useEffect(() => {
+		if (selectedMovieId && movies) {
+			const movie = movies.find(m => m.id === selectedMovieId) || null;
+			setSelectedMovie(movie);
+			
+			// if (movie) {
+			// 	// Update URL with movie ID for shareable links
+			// 	const currentQuery = searchParams.get('query');
+			// 	if (currentQuery) {
+			// 		router.push(`?query=${encodeURIComponent(currentQuery)}&movie=${selectedMovieId}`, { 
+			// 			scroll: false 
+			// 		});
+			// 	}
+			// }
+		} else {
+			setSelectedMovie(null);
+		}
+	}, [selectedMovieId, movies]);
+
+	// Check for movie ID in URL on load
+	useEffect(() => {
+		// Only run on first load, not on every URL change
+		if (firstLoadRef.current) {
+			const movieIdParam = searchParams.get('movie');
+			if (movieIdParam && movies?.length) {
+				const movieId = parseInt(movieIdParam, 10);
+				if (!isNaN(movieId)) {
+					setSelectedMovieId(movieId);
+					setIsDetailsPanelOpen(true);
+				}
+			}
+			firstLoadRef.current = false;
+		}
+	}, [searchParams, movies]);
 
 	const isNewMovie = (movie: Movie, existingMovies: Movie[]) => {
 		return !existingMovies.some(existing => existing && existing.id === movie.id);
+	};
+
+	// Handle movie card click
+	const handleMovieClick = (movieId: number) => {
+		setSelectedMovieId(movieId);
+		setIsDetailsPanelOpen(true);
+		
+		// Add smooth body class to prevent background scrolling on mobile
+		if (window.innerWidth < 768) {
+			document.body.style.overflow = 'hidden';
+		}
+	};
+	
+	// Close details panel
+	const closeDetailsPanel = () => {
+		setIsDetailsPanelOpen(false);
+		setSelectedMovieId(null);
+		
+		// Remove the movie ID from URL
+		const currentQuery = searchParams.get('query');
+		if (currentQuery) {
+			router.push(`?query=${encodeURIComponent(currentQuery)}`, { 
+				scroll: false 
+			});
+		}
+		
+		// Restore scrolling on mobile
+		document.body.style.overflow = '';
 	};
 
 	// Separate the search logic from URL updates
@@ -67,6 +147,10 @@ export default function Home() {
 			setIsSearching(true);
 			setError(null);
 			setMovies([]); // Start with empty list
+			
+			// Close details panel when starting a new search
+			setIsDetailsPanelOpen(false);
+			setSelectedMovieId(null);
 
 			const response = await fetch('/api/movies', {
 				method: 'POST',
@@ -186,97 +270,124 @@ export default function Home() {
 		  default:
 			return 'absolute top-full w-full opacity-0 pointer-events-none';
 		}
-	  };
+	};
+	
+	// Determine main page layout width based on details panel
+	const getMainLayoutStyle = () => {
+		return isDetailsPanelOpen ? 'flex justify-center' : 'flex justify-center';
+	};
 
 	return (
-		<PageLayout>
-			{/* Container for positioning - always full height */}
-			<div className="relative flex flex-col items-center w-full md:w-1/2 px-4 min-h-[90vh]">
-				{/* Main title only shown before search */}
-				{uiState === 'initial' && (
-					<div className="absolute top-[20%] left-0 right-0 space-y-2 animate-fade-in text-center">
-						<h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
-							<span className="gradient-text">Discover</span>
-							<span className="block text-theme-text">Your Next Flix</span>
-						</h1>
-						<p className="text-theme-text-muted text-lg md:text-xl max-w-lg mx-auto mt-4 leading-relaxed">
-							Describe what you're in the mood for and let AI find your perfect movie match
+		<>
+			<PageLayout isDetailsPanelOpen={isDetailsPanelOpen}>
+				{/* Container for positioning - always full height */}
+				<div className="relative flex flex-col items-center w-full px-4 min-h-[90vh]">
+					{/* Main title only shown before search */}
+					{uiState === 'initial' && (
+						<div className="absolute top-[20%] left-0 right-0 space-y-2 animate-fade-in text-center">
+							<h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
+								<span className="gradient-text">Discover</span>
+								<span className="block text-theme-text">Your Next Flix</span>
+							</h1>
+							<p className="text-theme-text-muted text-lg md:text-xl max-w-lg mx-auto mt-4 leading-relaxed">
+								Describe what you're in the mood for and let AI find your perfect movie match
+							</p>
+						</div>
+					)}
+
+					{/* Feature tags - only shown before search */}
+					{uiState === 'initial' && (
+						<div className="absolute top-[60%] left-0 right-0 flex flex-wrap justify-center gap-2 animate-fade-in">
+							{["Natural Language", "AI Powered", "Personalized"].map((tag, i) => (
+								<span
+									key={i}
+									className="px-3 py-1 text-xs font-medium rounded-full bg-theme-surface text-theme-text-muted border border-theme-text/5 hover:border-theme-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm"
+								>
+									{tag}
+								</span>
+							))}
+						</div>
+					)}
+
+					{/* Bottom text - only shown before search */}
+					{uiState === 'initial' && (
+						<p className="absolute top-[65%] left-0 right-0 text-theme-text-muted text-center text-sm max-w-md mx-auto opacity-80 animate-fade-in">
+							Try being specific with genres, moods, themes, or even character traits to find exactly what you want.
 						</p>
-					</div>
-				)}
+					)}
 
-				{/* Feature tags - only shown before search, positioned below search form */}
-				{uiState === 'initial' && (
-					<div className="absolute top-[60%] left-0 right-0 flex flex-wrap justify-center gap-2 animate-fade-in">
-						{["Natural Language", "AI Powered", "Personalized"].map((tag, i) => (
-							<span
-								key={i}
-								className="px-3 py-1 text-xs font-medium rounded-full bg-theme-surface text-theme-text-muted border border-theme-text/5 hover:border-theme-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm"
-							>
-								{tag}
-							</span>
-						))}
-					</div>
-				)}
-
-				{/* Bottom text - only shown before search */}
-				{uiState === 'initial' && (
-					<p className="absolute top-[65%] left-0 right-0 text-theme-text-muted text-center text-sm max-w-md mx-auto opacity-80 animate-fade-in">
-						Try being specific with genres, moods, themes, or even character traits to find exactly what you want.
-					</p>
-				)}
-
-				{/* Search form - uses a function to determine position class */}
-				<div className={getSearchBarPosition()}>
-					<form onSubmit={handleSubmit} className="relative w-full">
-						<div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-							<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-							</svg>
-						</div>
-						<input
-							ref={searchInputRef}
-							type="text"
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							placeholder="something with time travel and 90s nostalgia..."
-							className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-xl border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
-							disabled={isSearching || uiState === 'animating'}
-						/>
-						<button
-							type="submit"
-							disabled={isSearching || uiState === 'animating'}
-							className="absolute inset-y-0 right-3 my-auto flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
-						>
-							{isSearching ? (
-								<Spinner size="sm" color="#FFFFFF" />
-							) : (
-								<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-background" viewBox="0 0 20 20" fill="currentColor">
-									<path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+					{/* Search form - uses a function to determine position class */}
+					<div className={getSearchBarPosition()}>
+						<form onSubmit={handleSubmit} className="relative w-full">
+							<div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+								<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 								</svg>
-							)}
-						</button>
+							</div>
+							<input
+								ref={searchInputRef}
+								type="text"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								placeholder="something with time travel and 90s nostalgia..."
+								className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-xl border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
+								disabled={isSearching || uiState === 'animating'}
+							/>
+							<button
+								type="submit"
+								disabled={isSearching || uiState === 'animating'}
+								className="absolute inset-y-0 right-3 my-auto flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
+							>
+								{isSearching ? (
+									<Spinner size="sm" color="#FFFFFF" />
+								) : (
+									<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-background" viewBox="0 0 20 20" fill="currentColor">
+										<path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+									</svg>
+								)}
+							</button>
 
-						{/* "/" key hint */}
-						<div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
-							<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
-							<span className="ml-1">to focus</span>
-						</div>
-					</form>
-				</div>
-
-				{/* Error message */}
-				{error && (
-					<div className="absolute top-[20%] w-full mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 animate-fade-in">
-						<p>{error}</p>
+							{/* "/" key hint */}
+							<div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
+								<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
+								<span className="ml-1">to focus</span>
+							</div>
+						</form>
 					</div>
-				)}
 
-				{/* Movie results section - only render when we're in searched state */}
-				<div className={getResultsStyle()}>
-					<SearchResults movies={movies} isLoading={isSearching} />
+					{/* Error message */}
+					{error && (
+						<div className="absolute top-[20%] w-full mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 animate-fade-in">
+							<p>{error}</p>
+						</div>
+					)}
+
+					{/* Movie results section - only render when we're in searched state */}
+					<div className={getResultsStyle()}>
+						<SearchResults 
+							movies={movies} 
+							isLoading={isSearching} 
+							onMovieClick={handleMovieClick} 
+						/>
+					</div>
 				</div>
-			</div>
-		</PageLayout>
+			</PageLayout>
+			
+			{/* Movie details panel - render outside PageLayout for z-index stack */}
+			<MovieDetailsPanel 
+				movie={selectedMovie} 
+				isOpen={isDetailsPanelOpen} 
+				onClose={closeDetailsPanel} 
+			/>
+			
+			{/* Overlay backdrop for mobile - only shown when panel is open */}
+			{isDetailsPanelOpen && (
+				<div 
+					className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-panel z-40"
+					onClick={closeDetailsPanel}
+					aria-hidden="true"
+				/>
+			)}
+		</>
 	);
 }

@@ -143,3 +143,32 @@ a {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
+.translate-x-full {
+  transform: translateX(100%);
+}
+
+.translate-x-0 {
+  transform: translateX(0);
+}
+
+/* Backdrop blur for mobile overlay */
+.backdrop-blur-panel {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* For overlay scrollbar improvements */
+.details-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.details-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.details-panel::-webkit-scrollbar-thumb {
+  background-color: var(--color-text-muted);
+  border-radius: 20px;
+  border: 3px solid transparent;
+}
