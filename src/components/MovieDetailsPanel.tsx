@@ -34,7 +34,7 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
     abortControllerRef.current = new AbortController();
     
     try {
-      const response = await fetch('/api/providers', {
+      const response = await fetch('/api/providers/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
