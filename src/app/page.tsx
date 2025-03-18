@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
@@ -9,7 +9,15 @@ import MovieDetailsPanel from '@/components/MovieDetailsPanel';
 import Spinner from '@/components/Spinner';
 import { Movie } from '@/types/movie';
 
-export default function Home() {
+export default function Page() {
+	return (
+		<Suspense fallback={<PageLayout isDetailsPanelOpen={false} children={undefined}></PageLayout>}>
+			<Home />
+		</Suspense>
+	)
+}
+
+function Home() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [isSearching, setIsSearching] = useState(false);
 	const [hasSearched, setHasSearched] = useState(false);
