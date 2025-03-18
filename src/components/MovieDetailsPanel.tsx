@@ -1,7 +1,8 @@
 // components/MovieDetailsPanel.tsx
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { Movie } from '@/types/movie';
+import { Movie, ProviderData, ProviderResponse } from '@/types/movie';
+import ProvidersSection, { ProvidersSkeletonSection } from './ProvidersSection';
 
 interface MovieDetailsPanelProps {
   movie: Movie | null;
@@ -10,6 +11,79 @@ interface MovieDetailsPanelProps {
 }
 
 const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, onClose }) => {
+  const [providers, setProviders] = useState<ProviderData | null>(null);
+  const [isLoadingProviders, setIsLoadingProviders] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Get user's region - ideally this would come from a user setting
+  // For now, we'll use a fixed "US" as the region, but this could be expanded
+  const region = "US";
+  
+  // Fetch providers when a movie is selected and panel is open
+  const fetchProviders = useCallback(async (movieId: number) => {
+    // Clear previous state
+    setProviders(null);
+    setError(null);
+    setIsLoadingProviders(true);
+    
+    // Create a new AbortController for this request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      const response = await fetch('/api/providers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ movie_id: movieId, region }),
+        signal: abortControllerRef.current.signal
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch providers');
+      }
+      
+      const data: ProviderResponse = await response.json();
+      
+      // Extract provider data for the requested region
+      const regionData = data.results[region] || null;
+      setProviders(regionData);
+    } catch (err) {
+      // Don't set error if it was due to abort
+      if (err instanceof Error && err.name !== 'AbortError') {
+        console.error('Error fetching providers:', err);
+        setError(err.message);
+      }
+    } finally {
+      setIsLoadingProviders(false);
+    }
+  }, [region]);
+  
+  // Effect to fetch providers when movie changes
+  useEffect(() => {
+    if (movie && isOpen) {
+      fetchProviders(movie.id);
+    }
+    
+    // Cleanup function to cancel any in-flight requests
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      // Reset state if panel is closed
+      if (!isOpen) {
+        setProviders(null);
+        setIsLoadingProviders(false);
+        setError(null);
+      }
+    };
+  }, [movie, isOpen, fetchProviders]);
+  
   if (!movie) return null;
 
   // Format currency
@@ -185,7 +259,7 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
                     movie.genres.map(genre => (
                       <span 
                         key={genre.id}
-                        className="px-3 py-1 bg-theme-text-muted text-theme-background font-bold rounded-full text-sm shadow-sm border border-theme-text-muted"
+                        className="px-3 py-1 bg-theme-text-muted text-theme-background font-bold rounded-full text-sm shadow-sm border border-theme-text-muted hover:-translate-y-1 transition-transform duration-200"
                       >
                         {genre.name}
                       </span>
@@ -195,6 +269,16 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
                   )}
                 </div>
               </div>
+
+              {/* NEW: PROVIDERS SECTION */}
+              {isLoadingProviders ? (
+                <ProvidersSkeletonSection />
+              ) : (
+                <ProvidersSection 
+                  providerData={providers} 
+                  isLoading={false} 
+                />
+              )}
 
               {/* Production Countries */}
               <div className="mb-6">

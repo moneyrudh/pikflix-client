@@ -123,6 +123,13 @@ function Home() {
 		// Function to check screen size and set appropriate value
 		const checkScreenSize = () => {
 			const width = window.innerWidth;
+			const height = window.innerHeight;
+
+			if (height < 724) {
+				document.documentElement.classList.add('short-screen');
+			} else {
+				document.documentElement.classList.remove('short-screen');
+			}
 			if (width >= 1280) {
 				setScreenSize('xl');
 			} else if (width >= 1024) {
@@ -304,27 +311,28 @@ function Home() {
 	// Determine search bar positioning based on UI state
 	const getSearchBarPosition = () => {
 		switch (uiState) {
-			case 'initial':
-				return 'absolute top-1/2 -translate-y-1/2 w-full';
-			case 'animating':
-				return 'absolute w-full transform-gpu transition-all duration-500 ease-in-out animate-to-top';
-			case 'searched':
-				return 'absolute top-[5%] w-full';
-			default:
-				return 'absolute top-1/2 -translate-y-1/2 w-full';
+		  case 'initial':
+			return 'absolute top-1/2 -translate-y-1/2 w-full';
+		  case 'animating':
+			return 'absolute w-full transform-gpu transition-all duration-500 ease-in-out animate-to-top';
+		  case 'searched':
+			return 'absolute short:top-[2%] tall:top-[5%] w-full';
+		  default:
+			return 'absolute top-1/2 -translate-y-1/2 w-full';
 		}
-	};
-
+	  };
+	  
+	  // Update the getResultsStyle function
 	const getResultsStyle = () => {
 		switch (uiState) {
-			case 'initial':
-				return 'absolute top-full w-full opacity-0 pointer-events-none';
-			case 'animating':
-				return 'absolute top-full w-full opacity-0 transition-opacity duration-1000 ease-in-out pointer-events-none';
-			case 'searched':
-				return 'absolute top-[calc(5%+80px)] w-full opacity-100 transition-opacity duration-300 ease-in';
-			default:
-				return 'absolute top-full w-full opacity-0 pointer-events-none';
+		  case 'initial':
+			return 'absolute top-full w-full opacity-0 pointer-events-none';
+		  case 'animating':
+			return 'absolute top-full w-full opacity-0 transition-opacity duration-1000 ease-in-out pointer-events-none';
+		  case 'searched':
+			return 'absolute short:top-[calc(2%+40px)] tall:top-[calc(5%+80px)] w-full opacity-100 transition-opacity duration-300 ease-in';
+		  default:
+			return 'absolute top-full w-full opacity-0 pointer-events-none';
 		}
 	};
 
@@ -340,7 +348,7 @@ function Home() {
 				<div className="relative flex flex-col items-center w-full px-4 min-h-[90vh]">
 					{/* Main title only shown before search */}
 					{uiState === 'initial' && (
-						<div className="absolute top-[20%] left-0 right-0 space-y-2 animate-fade-in text-center">
+						<div className="absolute short:top-[15%] tall:top-[20%] left-0 right-0 space-y-2 animate-fade-in text-center">
 							<h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
 								<span className="gradient-text">Discover</span>
 								<span className="block text-theme-text">Your Next Flix</span>
@@ -353,7 +361,7 @@ function Home() {
 
 					{/* Feature tags - only shown before search */}
 					{uiState === 'initial' && (
-						<div className="absolute top-[60%] left-0 right-0 flex flex-wrap justify-center gap-2 animate-fade-in">
+						<div className="absolute short:top-[60%] tall:top-[60%] left-0 right-0 flex flex-wrap justify-center gap-2 animate-fade-in">
 							{["Natural Language", "AI Powered", "Personalized"].map((tag, i) => (
 								<span
 									key={i}
@@ -367,7 +375,7 @@ function Home() {
 
 					{/* Bottom text - only shown before search */}
 					{uiState === 'initial' && (
-						<p className="absolute top-[65%] left-0 right-0 text-theme-text-muted text-center text-sm max-w-md mx-auto opacity-80 animate-fade-in">
+						<p className="absolute short:top-[65%] tall:top-[65%] left-0 right-0 text-theme-text-muted text-center text-sm max-w-md mx-auto opacity-80 animate-fade-in">
 							Try being specific with genres, moods, themes, or even character traits to find exactly what you want.
 						</p>
 					)}

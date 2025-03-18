@@ -39,6 +39,11 @@ module.exports = {
           },
         },
       },
+      screens: {
+        // Add these height-based breakpoints
+        'tall': {'raw': '(min-height: 724px)'},
+        'short': {'raw': '(max-height: 723px)'},
+      }
     },
   },
   plugins: [],
