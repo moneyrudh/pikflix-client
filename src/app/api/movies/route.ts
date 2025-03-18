@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       const encoder = new TextEncoder();
       
       let buffer = '';
-      let recommendations = [];
+      const recommendations = [];
       
       try {
         while (true) {
