@@ -24,13 +24,15 @@ function Home() {
 	const [uiState, setUiState] = useState<'initial' | 'animating' | 'searched'>('initial');
 	const [movies, setMovies] = useState<Movie[] | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [screenSize, setScreenSize] = useState('base');
+
 	const firstLoadRef = useRef(true);
 
 	// New state for movie details panel
 	const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
 	const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
 	const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
-	
+
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -40,14 +42,14 @@ function Home() {
 		const queryParam = searchParams.get('query');
 		// Only perform search on first load, not on every URL change
 		if (queryParam && !hasSearched) {
-		  setSearchQuery(queryParam);
-		  setUiState('searched');
-		  setHasSearched(true);
-		  performSearch(queryParam);
+			setSearchQuery(queryParam);
+			setUiState('searched');
+			setHasSearched(true);
+			performSearch(queryParam);
 		} else if (queryParam && hasSearched) {
-		  // Just update the search query state without re-searching
-		  setSearchQuery(queryParam);
-		  setUiState('searched');
+			// Just update the search query state without re-searching
+			setSearchQuery(queryParam);
+			setUiState('searched');
 		}
 	}, [searchParams, hasSearched]);
 
@@ -63,7 +65,7 @@ function Home() {
 				e.preventDefault();
 				searchInputRef.current?.focus();
 			}
-			
+
 			// Close details panel on Escape key
 			if (e.key === "Escape" && isDetailsPanelOpen) {
 				closeDetailsPanel();
@@ -84,7 +86,7 @@ function Home() {
 		if (selectedMovieId && movies) {
 			const movie = movies.find(m => m.id === selectedMovieId) || null;
 			setSelectedMovie(movie);
-			
+
 			// if (movie) {
 			// 	// Update URL with movie ID for shareable links
 			// 	const currentQuery = searchParams.get('query');
@@ -115,6 +117,51 @@ function Home() {
 		}
 	}, [searchParams, movies]);
 
+
+	// Update the useEffect to detect different screen sizes
+	useEffect(() => {
+		// Function to check screen size and set appropriate value
+		const checkScreenSize = () => {
+			const width = window.innerWidth;
+			if (width >= 1280) {
+				setScreenSize('xl');
+			} else if (width >= 1024) {
+				setScreenSize('lg');
+			} else if (width >= 768) {
+				setScreenSize('md');
+			} else if (width >= 640) {
+				setScreenSize('sm');
+			} else {
+				setScreenSize('base');
+			}
+		};
+
+		// Check on initial load
+		checkScreenSize();
+
+		// Set up event listener for window resize
+		window.addEventListener('resize', checkScreenSize);
+
+		// Clean up event listener
+		return () => window.removeEventListener('resize', checkScreenSize);
+	}, []);
+
+	// Function to get placeholder based on screen size
+	const getPlaceholderText = () => {
+		switch (screenSize) {
+			case 'xl':
+				return "something with time travel and 90s nostalgia...";
+			case 'lg':
+				return "time travel movies with plot twists";
+			case 'md':
+				return "mind-bending sci-fi films";
+			case 'sm':
+			case 'base':
+			default:
+				return "obscure horror movies";
+		}
+	};
+
 	const isNewMovie = (movie: Movie, existingMovies: Movie[]) => {
 		return !existingMovies.some(existing => existing && existing.id === movie.id);
 	};
@@ -123,26 +170,26 @@ function Home() {
 	const handleMovieClick = (movieId: number) => {
 		setSelectedMovieId(movieId);
 		setIsDetailsPanelOpen(true);
-		
+
 		// Add smooth body class to prevent background scrolling on mobile
 		if (window.innerWidth < 768) {
 			document.body.style.overflow = 'hidden';
 		}
 	};
-	
+
 	// Close details panel
 	const closeDetailsPanel = () => {
 		setIsDetailsPanelOpen(false);
 		setSelectedMovieId(null);
-		
+
 		// Remove the movie ID from URL
 		const currentQuery = searchParams.get('query');
 		if (currentQuery) {
-			router.push(`?query=${encodeURIComponent(currentQuery)}`, { 
-				scroll: false 
+			router.push(`?query=${encodeURIComponent(currentQuery)}`, {
+				scroll: false
 			});
 		}
-		
+
 		// Restore scrolling on mobile
 		document.body.style.overflow = '';
 	};
@@ -155,7 +202,7 @@ function Home() {
 			setIsSearching(true);
 			setError(null);
 			setMovies([]); // Start with empty list
-			
+
 			// Close details panel when starting a new search
 			setIsDetailsPanelOpen(false);
 			setSelectedMovieId(null);
@@ -195,14 +242,14 @@ function Home() {
 							// Update movies as they come in
 							setMovies(prevMovies => {
 								const updatedMovies = [...prevMovies || []];
-								
+
 								// Only add movies that aren't already in the list
 								data.recommendations.forEach((movie: Movie) => {
 									if (isNewMovie(movie, updatedMovies)) {
 										updatedMovies.push(movie);
 									}
 								});
-								
+
 								return updatedMovies;
 							});
 						} catch (e) {
@@ -233,17 +280,17 @@ function Home() {
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!searchQuery.trim() || searchQuery === undefined) return;
-		
+
 		if (uiState === 'initial') {
 			// Start animation
 			setUiState('animating');
-			
+
 			// After animation completes, set final state & search
 			setTimeout(() => {
 				setUiState('searched');
 				setHasSearched(true);
 				performSearch(searchQuery);
-				
+
 				// IMPORTANT: Only update URL after animation is complete
 				router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
 			}, 1000); // Match transition duration
@@ -270,17 +317,17 @@ function Home() {
 
 	const getResultsStyle = () => {
 		switch (uiState) {
-		  case 'initial':
-			return 'absolute top-full w-full opacity-0 pointer-events-none';
-		  case 'animating':
-			return 'absolute top-full w-full opacity-0 transition-opacity duration-1000 ease-in-out pointer-events-none';
-		  case 'searched':
-			return 'absolute top-[calc(5%+80px)] w-full opacity-100 transition-opacity duration-300 ease-in';
-		  default:
-			return 'absolute top-full w-full opacity-0 pointer-events-none';
+			case 'initial':
+				return 'absolute top-full w-full opacity-0 pointer-events-none';
+			case 'animating':
+				return 'absolute top-full w-full opacity-0 transition-opacity duration-1000 ease-in-out pointer-events-none';
+			case 'searched':
+				return 'absolute top-[calc(5%+80px)] w-full opacity-100 transition-opacity duration-300 ease-in';
+			default:
+				return 'absolute top-full w-full opacity-0 pointer-events-none';
 		}
 	};
-	
+
 	// Determine main page layout width based on details panel
 	const getMainLayoutStyle = () => {
 		return isDetailsPanelOpen ? 'flex justify-center' : 'flex justify-center';
@@ -338,7 +385,7 @@ function Home() {
 								type="text"
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="something with time travel and 90s nostalgia..."
+								placeholder={getPlaceholderText()}
 								className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-xl border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
 								disabled={isSearching || uiState === 'animating'}
 							/>
@@ -357,10 +404,12 @@ function Home() {
 							</button>
 
 							{/* "/" key hint */}
-							<div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
-								<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
-								<span className="ml-1">to focus</span>
-							</div>
+							{(screenSize === 'lg' || screenSize === 'xl') && (
+								<div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
+									<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
+									<span className="ml-1">to focus</span>
+								</div>
+							)}
 						</form>
 					</div>
 
@@ -373,18 +422,18 @@ function Home() {
 
 					{/* Movie results section - only render when we're in searched state */}
 					<div className={getResultsStyle()}>
-						<SearchResults 
-							movies={movies} 
-							isLoading={isSearching} 
-							onMovieClick={handleMovieClick} 
+						<SearchResults
+							movies={movies}
+							isLoading={isSearching}
+							onMovieClick={handleMovieClick}
 						/>
 
 						{uiState === 'searched' && movies && movies.length > 0 && (
 							<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
-								Movie data powered by <a 
-									href="https://www.themoviedb.org" 
-									target="_blank" 
-									rel="noopener noreferrer" 
+								Movie data powered by <a
+									href="https://www.themoviedb.org"
+									target="_blank"
+									rel="noopener noreferrer"
 									className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
 								>
 									The Movie Database (TMDB)
@@ -394,17 +443,17 @@ function Home() {
 					</div>
 				</div>
 			</PageLayout>
-			
+
 			{/* Movie details panel - render outside PageLayout for z-index stack */}
-			<MovieDetailsPanel 
-				movie={selectedMovie} 
-				isOpen={isDetailsPanelOpen} 
-				onClose={closeDetailsPanel} 
+			<MovieDetailsPanel
+				movie={selectedMovie}
+				isOpen={isDetailsPanelOpen}
+				onClose={closeDetailsPanel}
 			/>
-			
+
 			{/* Overlay backdrop for mobile - only shown when panel is open */}
 			{isDetailsPanelOpen && (
-				<div 
+				<div
 					className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-panel z-40"
 					onClick={closeDetailsPanel}
 					aria-hidden="true"
