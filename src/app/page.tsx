@@ -437,16 +437,23 @@ function Home() {
 						/>
 
 						{uiState === 'searched' && movies && movies.length > 0 && (
-							<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
-								Movie data powered by <a
-									href="https://www.themoviedb.org"
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
-								>
-									The Movie Database (TMDB)
-								</a>
-							</div>
+						<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
+							Movie data powered by <a
+							href="https://www.themoviedb.org"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
+							>
+							The Movie Database (TMDB)
+							</a> and <a
+							href="https://www.justwatch.com"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
+							>
+							JustWatch
+							</a>
+						</div>
 						)}
 					</div>
 				</div>
