@@ -43,6 +43,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, onMovi
                     title={movie.title}
                     posterPath={movie.poster_path}
                     releaseDate={movie.release_date}
+                    voteAverage={movie.vote_average}
                     onClick={onMovieClick}
                 />
             ))}

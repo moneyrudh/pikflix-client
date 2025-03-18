@@ -14,8 +14,14 @@ const MovieCardSkeleton: React.FC = () => {
           {/* Title placeholder - wider bar with shimmer animation */}
           <div className="h-5 rounded w-3/4 mb-2 animate-shimmer"></div>
           
-          {/* Year placeholder - shorter bar with shimmer animation */}
-          <div className="h-3 rounded w-1/4 animate-shimmer"></div>
+          {/* Year and rating row - using flex with justify-between */}
+          <div className="flex justify-between items-center">
+            {/* Year placeholder - shorter bar with shimmer animation */}
+            <div className="h-3 rounded w-1/4 animate-shimmer"></div>
+            
+            {/* Rating placeholder - small square for the rating */}
+            <div className="h-3 rounded w-8 animate-shimmer"></div>
+          </div>
         </div>
       </div>
     </div>

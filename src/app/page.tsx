@@ -224,6 +224,7 @@ export default function Home() {
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!searchQuery.trim() || searchQuery === undefined) return;
 		
 		if (uiState === 'initial') {
 			// Start animation
@@ -251,7 +252,7 @@ export default function Home() {
 			case 'initial':
 				return 'absolute top-1/2 -translate-y-1/2 w-full';
 			case 'animating':
-				return 'absolute w-full transform-gpu transition-all duration-1000 ease-in-out animate-to-top';
+				return 'absolute w-full transform-gpu transition-all duration-500 ease-in-out animate-to-top';
 			case 'searched':
 				return 'absolute top-[5%] w-full';
 			default:
@@ -357,7 +358,7 @@ export default function Home() {
 
 					{/* Error message */}
 					{error && (
-						<div className="absolute top-[20%] w-full mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 animate-fade-in">
+						<div className="absolute top-[15%] w-full mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 animate-fade-in">
 							<p>{error}</p>
 						</div>
 					)}
@@ -369,6 +370,19 @@ export default function Home() {
 							isLoading={isSearching} 
 							onMovieClick={handleMovieClick} 
 						/>
+
+						{uiState === 'searched' && movies && movies.length > 0 && (
+							<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
+								Movie data powered by <a 
+									href="https://www.themoviedb.org" 
+									target="_blank" 
+									rel="noopener noreferrer" 
+									className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
+								>
+									The Movie Database (TMDB)
+								</a>
+							</div>
+						)}
 					</div>
 				</div>
 			</PageLayout>
