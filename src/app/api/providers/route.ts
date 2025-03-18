@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     // Call our FastAPI backend
     const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
     
-    const response = await fetch(`${apiUrl}/api/providers`, {
+    const response = await fetch(`${apiUrl}/api/providers/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
