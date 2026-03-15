@@ -433,6 +433,7 @@ function Home() {
 						<SearchResults
 							movies={movies}
 							isLoading={isSearching}
+							selectedMovieId={selectedMovieId}
 							onMovieClick={handleMovieClick}
 						/>
 

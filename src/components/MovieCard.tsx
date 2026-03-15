@@ -10,16 +10,18 @@ interface MovieCardProps {
   posterPath: string | null;
   releaseDate: string | null;
   voteAverage?: number; // Added vote average prop
+  isSelected?: boolean;
   onClick: (movieId: number) => void;
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({ 
-  id, 
-  title, 
-  posterPath, 
-  releaseDate, 
-  voteAverage, 
-  onClick 
+const MovieCard: React.FC<MovieCardProps> = ({
+  id,
+  title,
+  posterPath,
+  releaseDate,
+  voteAverage,
+  isSelected = false,
+  onClick
 }) => {
   // Extract year from release date
   const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
@@ -37,7 +39,11 @@ const MovieCard: React.FC<MovieCardProps> = ({
   
   return (
     <div 
-      className="bg-theme-surface rounded-lg overflow-hidden shadow-md h-full transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer"
+      className={`bg-theme-surface rounded-lg overflow-hidden shadow-md h-full transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer ${
+        isSelected
+          ? 'ring-2 ring-theme-primary -translate-y-1 scale-[1.03] shadow-xl shadow-theme-primary/20'
+          : ''
+      }`}
       onClick={handleClick}
       role="button"
       tabIndex={0}

@@ -7,11 +7,12 @@ import MovieCardSkeleton from './MovieCardSkeleton';
 interface SearchResultsProps {
     movies: Movie[] | null;
     isLoading: boolean;
+    selectedMovieId?: number | null;
     onMovieClick: (movieId: number) => void;
 }
 
 // Update SearchResults to show partial results
-const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, onMovieClick }) => {
+const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, selectedMovieId, onMovieClick }) => {
     // Calculate how many placeholders we need
     const loadedCount = movies?.length || 0;
     const placeholdersNeeded = isLoading ? Math.max(0, 9 - loadedCount) : 0;
@@ -44,6 +45,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, onMovi
                     posterPath={movie.poster_path}
                     releaseDate={movie.release_date}
                     voteAverage={movie.vote_average}
+                    isSelected={movie.id === selectedMovieId}
                     onClick={onMovieClick}
                 />
             ))}
