@@ -12,7 +12,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen })
   return (
     <div className="min-h-screen bg-theme-background">
       {/* Full-width navbar - unchanged */}
-      <header className="sticky top-0 z-40 w-full border-none border-theme-text/5 glass-effect bg-theme-background shadow-sm">
+      <header className="fixed top-0 z-50 w-full border-none border-theme-text/5 bg-transparent">
         <div className="container mx-auto px-4 md:px-6 py-4 flex justify-between items-center">
           <a href="/" className="flex items-center space-x-2 group">
             <span className="text-theme-primary font-bold text-2xl tracking-tighter group-hover:text-theme-accent transition-colors duration-300">
@@ -26,9 +26,9 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen })
         </div>
       </header>
       
-      {/* This is the key change - instead of a fixed height container with overflow issues, 
+      {/* This is the key change - instead of a fixed height container with overflow issues,
           we use a technique with an invisible copy to maintain document flow */}
-      <div className="relative w-full">
+      <div className="relative w-full pt-16">
         {/* Invisible duplicate that maintains proper document flow and height */}
         <div className="invisible">
           <div className="w-full flex justify-center">
