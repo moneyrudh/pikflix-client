@@ -36,6 +36,7 @@ function Home() {
 	const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
 	const searchInputRef = useRef<HTMLInputElement>(null);
+	const latestTurnRef = useRef<HTMLDivElement>(null);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -231,6 +232,17 @@ function Home() {
 			// Close details panel when starting a new search
 			setIsDetailsPanelOpen(false);
 			setSelectedMovieId(null);
+
+			// Auto-scroll to the new turn on follow-up searches
+			// Offset by header (64px) + search bar (~80px) so the query label isn't hidden
+			if (sessionHistory.length > 0) {
+				setTimeout(() => {
+					if (latestTurnRef.current) {
+						const y = latestTurnRef.current.getBoundingClientRect().top + window.scrollY - 110;
+						window.scrollTo({ top: y, behavior: 'smooth' });
+					}
+				}, 100);
+			}
 
 			const history = buildApiHistory();
 
@@ -482,39 +494,40 @@ function Home() {
 
 					{/* Movie results section - only render when we're in searched state */}
 					<div className={getResultsStyle()}>
-						{/* Previous turns from session history */}
-						{sessionHistory.map((turn, index) => (
-							<div key={`turn-${index}`} className="mb-8">
-								<div className="flex items-center gap-2 pt-8 pb-2">
-									<span className="text-sm text-theme-text-muted italic">
-										&ldquo;{turn.query}&rdquo;
-									</span>
+						{/* All turns rendered as one unified list to avoid flicker */}
+						{(() => {
+							const allTurns = sessionHistory.map(turn => ({
+								query: turn.query,
+								movies: turn.movies,
+								loading: false,
+							}));
+							if (isSearching || (currentMovies && currentMovies.length > 0)) {
+								allTurns.push({
+									query: searchQuery,
+									movies: currentMovies || [],
+									loading: isSearching,
+								});
+							}
+							return allTurns.map((turn, index) => (
+								<div
+									key={`turn-${index}`}
+									ref={index === allTurns.length - 1 ? latestTurnRef : undefined}
+									className={index === 0 ? 'mb-8 mt-4' : 'mb-8'}
+								>
+									<div className="flex items-center gap-2 pt-8 pb-2">
+										<span className="text-sm text-theme-text-muted italic">
+											&ldquo;{turn.query}&rdquo;
+										</span>
+									</div>
+									<SearchResults
+										movies={turn.movies}
+										isLoading={turn.loading}
+										selectedMovieId={selectedMovieId}
+										onMovieClick={handleMovieClick}
+									/>
 								</div>
-								<SearchResults
-									movies={turn.movies}
-									isLoading={false}
-									selectedMovieId={selectedMovieId}
-									onMovieClick={handleMovieClick}
-								/>
-							</div>
-						))}
-
-						{/* Current turn (streaming in progress or empty state) */}
-						{(isSearching || (currentMovies && currentMovies.length > 0)) && (
-							<div className="mb-8">
-								<div className="flex items-center gap-2 pt-8 pb-2">
-									<span className="text-sm text-theme-text-muted italic">
-										&ldquo;{searchQuery}&rdquo;
-									</span>
-								</div>
-								<SearchResults
-									movies={currentMovies}
-									isLoading={isSearching}
-									selectedMovieId={selectedMovieId}
-									onMovieClick={handleMovieClick}
-								/>
-							</div>
-						)}
+							));
+						})()}
 
 						{uiState === 'searched' && (sessionHistory.length > 0 || (currentMovies && currentMovies.length > 0)) && (
 						<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
