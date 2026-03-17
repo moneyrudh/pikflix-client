@@ -104,7 +104,7 @@ a {
     transform: translateY(-50%);
   }
   to {
-    top: 7%;
+    top: 5.5%;
     transform: translateY(0);
   }
 }
