@@ -7,7 +7,7 @@ import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
 import MovieDetailsPanel from '@/components/MovieDetailsPanel';
 import Spinner from '@/components/Spinner';
-import { Movie } from '@/types/movie';
+import { Movie, ConversationTurn, RecommendationSummary } from '@/types/movie';
 
 export default function Page() {
 	return (
@@ -22,11 +22,31 @@ function Home() {
 	const [isSearching, setIsSearching] = useState(false);
 	const [hasSearched, setHasSearched] = useState(false);
 	const [uiState, setUiState] = useState<'initial' | 'animating' | 'searched'>('initial');
-	const [movies, setMovies] = useState<Movie[] | null>(null);
+	const [sessionHistory, setSessionHistory] = useState<ConversationTurn[]>([]);
+	const [currentMovies, setCurrentMovies] = useState<Movie[] | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [screenSize, setScreenSize] = useState('base');
 
 	const firstLoadRef = useRef(true);
+	const [searchBarScrolled, setSearchBarScrolled] = useState(false);
+
+	const smoothScrollTo = (targetY: number, duration: number) => {
+		const startY = window.scrollY;
+		const diff = targetY - startY;
+		const startTime = performance.now();
+
+		const easeInOutCubic = (t: number) =>
+			t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+
+		const step = (currentTime: number) => {
+			const elapsed = currentTime - startTime;
+			const progress = Math.min(elapsed / duration, 1);
+			window.scrollTo(0, startY + diff * easeInOutCubic(progress));
+			if (progress < 1) requestAnimationFrame(step);
+		};
+
+		requestAnimationFrame(step);
+	};
 
 	// New state for movie details panel
 	const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
@@ -34,6 +54,8 @@ function Home() {
 	const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
 	const searchInputRef = useRef<HTMLInputElement>(null);
+	const searchBarAnimRef = useRef<HTMLDivElement>(null);
+	const latestTurnRef = useRef<HTMLDivElement>(null);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -81,32 +103,26 @@ function Home() {
 		};
 	}, [isDetailsPanelOpen]);
 
-	// Find selected movie when ID changes
+	// Find selected movie when ID changes — search across all turns + current
 	useEffect(() => {
-		if (selectedMovieId && movies) {
-			const movie = movies.find(m => m.id === selectedMovieId) || null;
+		if (selectedMovieId) {
+			const allMovies = [
+				...sessionHistory.flatMap(turn => turn.movies),
+				...(currentMovies || []),
+			];
+			const movie = allMovies.find(m => m.id === selectedMovieId) || null;
 			setSelectedMovie(movie);
-
-			// if (movie) {
-			// 	// Update URL with movie ID for shareable links
-			// 	const currentQuery = searchParams.get('query');
-			// 	if (currentQuery) {
-			// 		router.push(`?query=${encodeURIComponent(currentQuery)}&movie=${selectedMovieId}`, { 
-			// 			scroll: false 
-			// 		});
-			// 	}
-			// }
 		} else {
 			setSelectedMovie(null);
 		}
-	}, [selectedMovieId, movies]);
+	}, [selectedMovieId, sessionHistory, currentMovies]);
 
 	// Check for movie ID in URL on load
 	useEffect(() => {
 		// Only run on first load, not on every URL change
 		if (firstLoadRef.current) {
 			const movieIdParam = searchParams.get('movie');
-			if (movieIdParam && movies?.length) {
+			if (movieIdParam && (sessionHistory.length > 0 || currentMovies?.length)) {
 				const movieId = parseInt(movieIdParam, 10);
 				if (!isNaN(movieId)) {
 					setSelectedMovieId(movieId);
@@ -115,7 +131,7 @@ function Home() {
 			}
 			firstLoadRef.current = false;
 		}
-	}, [searchParams, movies]);
+	}, [searchParams, sessionHistory, currentMovies]);
 
 
 	// Update the useEffect to detect different screen sizes
@@ -152,6 +168,36 @@ function Home() {
 		// Clean up event listener
 		return () => window.removeEventListener('resize', checkScreenSize);
 	}, []);
+
+	// Transition from animating → searched when the CSS animation completes
+	useEffect(() => {
+		const el = searchBarAnimRef.current;
+		if (uiState !== 'animating' || !el) return;
+
+		const onEnd = () => {
+			setUiState('searched');
+			setHasSearched(true);
+			performSearch(searchQuery);
+			router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
+		};
+
+		el.addEventListener('animationend', onEnd, { once: true });
+		return () => el.removeEventListener('animationend', onEnd);
+	}, [uiState]);
+
+	// Detect when cards scroll behind the search bar
+	useEffect(() => {
+		if (uiState !== 'searched') return;
+
+		const handleScroll = () => {
+			// Search bar sits at ~top-16 (header) + its own height (~80px)
+			// Cards start scrolling behind once the user scrolls at all past the results top
+			setSearchBarScrolled(window.scrollY > 20);
+		};
+
+		window.addEventListener('scroll', handleScroll, { passive: true });
+		return () => window.removeEventListener('scroll', handleScroll);
+	}, [uiState]);
 
 	// Function to get placeholder based on screen size
 	const getPlaceholderText = () => {
@@ -201,6 +247,14 @@ function Home() {
 		document.body.style.overflow = '';
 	};
 
+	// Build lightweight history for the API request
+	const buildApiHistory = (): { query: string; recommendations: RecommendationSummary[] }[] => {
+		return sessionHistory.map(turn => ({
+			query: turn.query,
+			recommendations: turn.recommendations,
+		}));
+	};
+
 	// Separate the search logic from URL updates
 	const performSearch = async (query: string) => {
 		if (!query.trim()) return;
@@ -208,16 +262,32 @@ function Home() {
 		try {
 			setIsSearching(true);
 			setError(null);
-			setMovies([]); // Start with empty list
+			setCurrentMovies([]); // Start with empty list for current turn
 
 			// Close details panel when starting a new search
 			setIsDetailsPanelOpen(false);
 			setSelectedMovieId(null);
 
+			// Auto-scroll to the new turn on follow-up searches
+			// Offset by header (64px) + search bar (~80px) so the query label isn't hidden
+			// Use a responsive offset — smaller screens need more space for the fixed header/bar
+			if (sessionHistory.length > 0) {
+				setTimeout(() => {
+					if (latestTurnRef.current) {
+						const w = window.innerWidth;
+						const offset = 110;
+						const y = latestTurnRef.current.getBoundingClientRect().top + window.scrollY - offset;
+						smoothScrollTo(y, 1000);
+					}
+				}, 100);
+			}
+
+			const history = buildApiHistory();
+
 			const response = await fetch('/api/movies', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ query }),
+				body: JSON.stringify({ query, history: history.length > 0 ? history : undefined }),
 			});
 
 			if (!response.ok) {
@@ -230,6 +300,7 @@ function Home() {
 			const decoder = new TextDecoder();
 
 			let buffer = '';
+			let streamedMovies: Movie[] = [];
 
 			while (true) {
 				const { value, done } = await reader.read();
@@ -246,19 +317,13 @@ function Home() {
 					if (line.trim()) {
 						try {
 							const data = JSON.parse(line.trim());
-							// Update movies as they come in
-							setMovies(prevMovies => {
-								const updatedMovies = [...prevMovies || []];
-
-								// Only add movies that aren't already in the list
-								data.recommendations.forEach((movie: Movie) => {
-									if (isNewMovie(movie, updatedMovies)) {
-										updatedMovies.push(movie);
-									}
-								});
-
-								return updatedMovies;
+							// Update current movies as they come in
+							data.recommendations.forEach((movie: Movie) => {
+								if (isNewMovie(movie, streamedMovies)) {
+									streamedMovies = [...streamedMovies, movie];
+								}
 							});
+							setCurrentMovies([...streamedMovies]);
 						} catch (e) {
 							console.error('Error parsing JSON:', e);
 						}
@@ -270,15 +335,31 @@ function Home() {
 			if (buffer.trim()) {
 				try {
 					const data = JSON.parse(buffer.trim());
-					setMovies(data.recommendations);
+					streamedMovies = data.recommendations;
+					setCurrentMovies(data.recommendations);
 				} catch (e) {
 					console.error('Error parsing final JSON:', e);
 				}
 			}
+
+			// Once streaming is complete, commit this turn to session history
+			if (streamedMovies.length > 0) {
+				const completedTurn: ConversationTurn = {
+					query,
+					movies: streamedMovies,
+					recommendations: streamedMovies.map(m => ({
+						title: m.title,
+						year: m.release_date ? parseInt(m.release_date.substring(0, 4)) : null,
+						reason: m.reason || null,
+					})),
+				};
+				setSessionHistory(prev => [...prev, completedTurn]);
+				setCurrentMovies(null); // Clear current — it's now in history
+			}
 		} catch (err) {
 			console.error('Error:', err);
 			setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-			setMovies(null);
+			setCurrentMovies(null);
 		} finally {
 			setIsSearching(false);
 		}
@@ -289,18 +370,8 @@ function Home() {
 		if (!searchQuery.trim() || searchQuery === undefined) return;
 
 		if (uiState === 'initial') {
-			// Start animation
+			// Start animation — animationend listener handles the transition
 			setUiState('animating');
-
-			// After animation completes, set final state & search
-			setTimeout(() => {
-				setUiState('searched');
-				setHasSearched(true);
-				performSearch(searchQuery);
-
-				// IMPORTANT: Only update URL after animation is complete
-				router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
-			}, 1000); // Match transition duration
 		} else if (uiState === 'searched') {
 			// Already in top position, update URL directly
 			router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
@@ -312,13 +383,13 @@ function Home() {
 	const getSearchBarPosition = () => {
 		switch (uiState) {
 		  case 'initial':
-			return 'absolute top-1/2 -translate-y-1/2 w-full';
+			return 'absolute top-1/2 -translate-y-1/2 left-4 right-4';
 		  case 'animating':
-			return 'absolute w-full transform-gpu transition-all duration-500 ease-in-out animate-to-top';
+			return 'absolute left-4 right-4 transform-gpu transition-all duration-500 ease-in-out animate-to-top';
 		  case 'searched':
-			return 'absolute short:top-[2%] tall:top-[5%] w-full';
+			return 'hidden'; // Rendered outside PageLayout when searched
 		  default:
-			return 'absolute top-1/2 -translate-y-1/2 w-full';
+			return 'absolute top-1/2 -translate-y-1/2 left-4 right-4';
 		}
 	  };
 	  
@@ -330,7 +401,7 @@ function Home() {
 		  case 'animating':
 			return 'absolute top-full w-full opacity-0 transition-opacity duration-1000 ease-in-out pointer-events-none';
 		  case 'searched':
-			return 'absolute short:top-[calc(2%+40px)] tall:top-[calc(5%+80px)] w-full opacity-100 transition-opacity duration-300 ease-in';
+			return 'w-full pt-24 opacity-100 transition-opacity duration-300 ease-in';
 		  default:
 			return 'absolute top-full w-full opacity-0 pointer-events-none';
 		}
@@ -341,8 +412,65 @@ function Home() {
 		return isDetailsPanelOpen ? 'flex justify-center' : 'flex justify-center';
 	};
 
+	const searchForm = (
+		<form onSubmit={handleSubmit} className="relative w-full">
+			<div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+				<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+				</svg>
+			</div>
+			<input
+				ref={searchInputRef}
+				type="text"
+				value={searchQuery}
+				onChange={(e) => setSearchQuery(e.target.value)}
+				placeholder={getPlaceholderText()}
+				className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
+				disabled={isSearching || uiState === 'animating'}
+			/>
+			<button
+				type="submit"
+				disabled={isSearching || uiState === 'animating'}
+				className="absolute inset-y-0 right-3 my-auto flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
+			>
+				{isSearching ? (
+					<Spinner size="sm" color="#FFFFFF" />
+				) : (
+					<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-background" viewBox="0 0 20 20" fill="currentColor">
+						<path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+					</svg>
+				)}
+			</button>
+
+			{/* "/" key hint */}
+			{(screenSize === 'lg' || screenSize === 'xl') && (
+				<div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
+					<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
+					<span className="ml-1">to focus</span>
+				</div>
+			)}
+		</form>
+	);
+
 	return (
 		<>
+			{/* Fixed search bar - rendered outside PageLayout when in searched state */}
+			{/* Glass overlay above search bar — blurs cards as they scroll behind */}
+			{uiState === 'searched' && searchBarScrolled && (
+				<div className="fixed top-0 left-0 right-0 h-[92px] z-40 bg-theme-background/60 backdrop-blur-md pointer-events-none" />
+			)}
+
+			{uiState === 'searched' && (
+				<div className="fixed top-16 left-0 right-0 z-50 flex justify-center pb-3">
+					<div
+						className="w-full lg:w-3/4 xl:w-1/2 px-8 transition-transform duration-500 ease-in-out"
+						style={{ transform: isDetailsPanelOpen ? 'translateX(-50%)' : 'translateX(0)' }}
+					>
+						{searchForm}
+					</div>
+				</div>
+			)}
+
 			<PageLayout isDetailsPanelOpen={isDetailsPanelOpen}>
 				{/* Container for positioning - always full height */}
 				<div className="relative flex flex-col items-center w-full px-4 min-h-[90vh]">
@@ -381,44 +509,8 @@ function Home() {
 					)}
 
 					{/* Search form - uses a function to determine position class */}
-					<div className={getSearchBarPosition()}>
-						<form onSubmit={handleSubmit} className="relative w-full">
-							<div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-								<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-								</svg>
-							</div>
-							<input
-								ref={searchInputRef}
-								type="text"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder={getPlaceholderText()}
-								className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-xl border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
-								disabled={isSearching || uiState === 'animating'}
-							/>
-							<button
-								type="submit"
-								disabled={isSearching || uiState === 'animating'}
-								className="absolute inset-y-0 right-3 my-auto flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
-							>
-								{isSearching ? (
-									<Spinner size="sm" color="#FFFFFF" />
-								) : (
-									<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-background" viewBox="0 0 20 20" fill="currentColor">
-										<path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-									</svg>
-								)}
-							</button>
-
-							{/* "/" key hint */}
-							{(screenSize === 'lg' || screenSize === 'xl') && (
-								<div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
-									<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
-									<span className="ml-1">to focus</span>
-								</div>
-							)}
-						</form>
+					<div ref={searchBarAnimRef} className={getSearchBarPosition()}>
+						{searchForm}
 					</div>
 
 					{/* Error message */}
@@ -430,13 +522,42 @@ function Home() {
 
 					{/* Movie results section - only render when we're in searched state */}
 					<div className={getResultsStyle()}>
-						<SearchResults
-							movies={movies}
-							isLoading={isSearching}
-							onMovieClick={handleMovieClick}
-						/>
+						{/* All turns rendered as one unified list to avoid flicker */}
+						{(() => {
+							const allTurns = sessionHistory.map(turn => ({
+								query: turn.query,
+								movies: turn.movies,
+								loading: false,
+							}));
+							if (isSearching || (currentMovies && currentMovies.length > 0)) {
+								allTurns.push({
+									query: searchQuery,
+									movies: currentMovies || [],
+									loading: isSearching,
+								});
+							}
+							return allTurns.map((turn, index) => (
+								<div
+									key={`turn-${index}`}
+									ref={index === allTurns.length - 1 ? latestTurnRef : undefined}
+									className={index === 0 ? 'mb-8 mt-4' : 'mb-8'}
+								>
+									<div className="flex items-center gap-2 pt-8 pb-2">
+										<span className="text-sm text-theme-text-muted italic">
+											&ldquo;{turn.query}&rdquo;
+										</span>
+									</div>
+									<SearchResults
+										movies={turn.movies}
+										isLoading={turn.loading}
+										selectedMovieId={selectedMovieId}
+										onMovieClick={handleMovieClick}
+									/>
+								</div>
+							));
+						})()}
 
-						{uiState === 'searched' && movies && movies.length > 0 && (
+						{uiState === 'searched' && (sessionHistory.length > 0 || (currentMovies && currentMovies.length > 0)) && (
 						<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
 							Movie data powered by <a
 							href="https://www.themoviedb.org"

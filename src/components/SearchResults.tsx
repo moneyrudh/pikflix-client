@@ -7,11 +7,12 @@ import MovieCardSkeleton from './MovieCardSkeleton';
 interface SearchResultsProps {
     movies: Movie[] | null;
     isLoading: boolean;
+    selectedMovieId?: number | null;
     onMovieClick: (movieId: number) => void;
 }
 
 // Update SearchResults to show partial results
-const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, onMovieClick }) => {
+const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, selectedMovieId, onMovieClick }) => {
     // Calculate how many placeholders we need
     const loadedCount = movies?.length || 0;
     const placeholdersNeeded = isLoading ? Math.max(0, 9 - loadedCount) : 0;
@@ -19,7 +20,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, onMovi
     // Show full skeleton grid when loading with no movies yet
     if (isLoading && loadedCount === 0) {
         return (
-            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
                 {Array.from({ length: 9 }).map((_, index) => (
                     <MovieCardSkeleton key={`skeleton-${index}`} />
                 ))}
@@ -34,7 +35,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, onMovi
 
     // Render loaded movies + placeholders for ones still loading
     return (
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
             {/* Show movies we have so far */}
             {movies.map((movie) => (
                 <MovieCard
@@ -44,6 +45,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, onMovi
                     posterPath={movie.poster_path}
                     releaseDate={movie.release_date}
                     voteAverage={movie.vote_average}
+                    isSelected={movie.id === selectedMovieId}
                     onClick={onMovieClick}
                 />
             ))}

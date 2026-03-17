@@ -64,6 +64,18 @@ export interface MovieRecommendationResponse {
 	query: string;
 }
 
+export interface RecommendationSummary {
+	title: string;
+	year: number | null;
+	reason: string | null;
+}
+
+export interface ConversationTurn {
+	query: string;
+	movies: Movie[];
+	recommendations: RecommendationSummary[];
+}
+
 export interface Provider {
 	logo_path: string;
 	provider_id: number;

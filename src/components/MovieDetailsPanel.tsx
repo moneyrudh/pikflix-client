@@ -116,7 +116,7 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
 
   return (
     <div 
-      className={`fixed top-0 bottom-0 right-0 bg-theme-surface shadow-2xl overflow-y-auto transition-all duration-300 ease-in-out z-50 md:w-1/2 w-full details-panel ${
+      className={`fixed top-0 bottom-0 right-0 bg-theme-surface shadow-2xl overflow-y-auto transition-all duration-300 ease-in-out z-50 xl:w-1/2 w-full details-panel ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
