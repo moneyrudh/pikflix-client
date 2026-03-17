@@ -425,7 +425,7 @@ function Home() {
 				value={searchQuery}
 				onChange={(e) => setSearchQuery(e.target.value)}
 				placeholder={getPlaceholderText()}
-				className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-xl border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
+				className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
 				disabled={isSearching || uiState === 'animating'}
 			/>
 			<button
@@ -457,7 +457,7 @@ function Home() {
 			{/* Fixed search bar - rendered outside PageLayout when in searched state */}
 			{/* Glass overlay above search bar — blurs cards as they scroll behind */}
 			{uiState === 'searched' && searchBarScrolled && (
-				<div className="fixed top-0 left-0 right-0 h-16 z-40 bg-theme-background/60 backdrop-blur-md pointer-events-none" />
+				<div className="fixed top-0 left-0 right-0 h-[92px] z-40 bg-theme-background/60 backdrop-blur-md pointer-events-none" />
 			)}
 
 			{uiState === 'searched' && (
