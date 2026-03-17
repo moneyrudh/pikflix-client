@@ -20,7 +20,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, select
     // Show full skeleton grid when loading with no movies yet
     if (isLoading && loadedCount === 0) {
         return (
-            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
+            <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
                 {Array.from({ length: 9 }).map((_, index) => (
                     <MovieCardSkeleton key={`skeleton-${index}`} />
                 ))}
@@ -35,7 +35,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, select
 
     // Render loaded movies + placeholders for ones still loading
     return (
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
             {/* Show movies we have so far */}
             {movies.map((movie) => (
                 <MovieCard

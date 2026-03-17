@@ -32,7 +32,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen })
         {/* Invisible duplicate that maintains proper document flow and height */}
         <div className="invisible">
           <div className="w-full flex justify-center">
-            <div className="w-full md:w-1/2 px-4">
+            <div className="w-full lg:w-3/4 xl:w-1/2 px-4">
               {children}
             </div>
           </div>
@@ -42,7 +42,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen })
         <div className="absolute top-0 w-full">
           <div className="w-full flex justify-center">
             <main 
-              className="w-full md:w-1/2 px-4 transition-transform duration-500 ease-in-out"
+              className="w-full lg:w-3/4 xl:w-1/2 px-4 transition-transform duration-500 ease-in-out"
               style={{ 
                 transform: isDetailsPanelOpen ? 'translateX(-50%)' : 'translateX(0)'
               }}
