@@ -30,12 +30,31 @@ function Home() {
 	const firstLoadRef = useRef(true);
 	const [searchBarScrolled, setSearchBarScrolled] = useState(false);
 
+	const smoothScrollTo = (targetY: number, duration: number) => {
+		const startY = window.scrollY;
+		const diff = targetY - startY;
+		const startTime = performance.now();
+
+		const easeInOutCubic = (t: number) =>
+			t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+
+		const step = (currentTime: number) => {
+			const elapsed = currentTime - startTime;
+			const progress = Math.min(elapsed / duration, 1);
+			window.scrollTo(0, startY + diff * easeInOutCubic(progress));
+			if (progress < 1) requestAnimationFrame(step);
+		};
+
+		requestAnimationFrame(step);
+	};
+
 	// New state for movie details panel
 	const [selectedMovieId, setSelectedMovieId] = useState<number | null>(null);
 	const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
 	const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
 	const searchInputRef = useRef<HTMLInputElement>(null);
+	const searchBarAnimRef = useRef<HTMLDivElement>(null);
 	const latestTurnRef = useRef<HTMLDivElement>(null);
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -150,6 +169,22 @@ function Home() {
 		return () => window.removeEventListener('resize', checkScreenSize);
 	}, []);
 
+	// Transition from animating → searched when the CSS animation completes
+	useEffect(() => {
+		const el = searchBarAnimRef.current;
+		if (uiState !== 'animating' || !el) return;
+
+		const onEnd = () => {
+			setUiState('searched');
+			setHasSearched(true);
+			performSearch(searchQuery);
+			router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
+		};
+
+		el.addEventListener('animationend', onEnd, { once: true });
+		return () => el.removeEventListener('animationend', onEnd);
+	}, [uiState]);
+
 	// Detect when cards scroll behind the search bar
 	useEffect(() => {
 		if (uiState !== 'searched') return;
@@ -235,11 +270,14 @@ function Home() {
 
 			// Auto-scroll to the new turn on follow-up searches
 			// Offset by header (64px) + search bar (~80px) so the query label isn't hidden
+			// Use a responsive offset — smaller screens need more space for the fixed header/bar
 			if (sessionHistory.length > 0) {
 				setTimeout(() => {
 					if (latestTurnRef.current) {
-						const y = latestTurnRef.current.getBoundingClientRect().top + window.scrollY - 110;
-						window.scrollTo({ top: y, behavior: 'smooth' });
+						const w = window.innerWidth;
+						const offset = 110;
+						const y = latestTurnRef.current.getBoundingClientRect().top + window.scrollY - offset;
+						smoothScrollTo(y, 1000);
 					}
 				}, 100);
 			}
@@ -332,18 +370,8 @@ function Home() {
 		if (!searchQuery.trim() || searchQuery === undefined) return;
 
 		if (uiState === 'initial') {
-			// Start animation
+			// Start animation — animationend listener handles the transition
 			setUiState('animating');
-
-			// After animation completes, set final state & search
-			setTimeout(() => {
-				setUiState('searched');
-				setHasSearched(true);
-				performSearch(searchQuery);
-
-				// IMPORTANT: Only update URL after animation is complete
-				router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
-			}, 1000); // Match transition duration
 		} else if (uiState === 'searched') {
 			// Already in top position, update URL directly
 			router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
@@ -435,7 +463,7 @@ function Home() {
 			{uiState === 'searched' && (
 				<div className="fixed top-16 left-0 right-0 z-50 flex justify-center pb-3">
 					<div
-						className="w-full md:w-1/2 px-8 transition-transform duration-500 ease-in-out"
+						className="w-full lg:w-3/4 xl:w-1/2 px-8 transition-transform duration-500 ease-in-out"
 						style={{ transform: isDetailsPanelOpen ? 'translateX(-50%)' : 'translateX(0)' }}
 					>
 						{searchForm}
@@ -481,7 +509,7 @@ function Home() {
 					)}
 
 					{/* Search form - uses a function to determine position class */}
-					<div className={getSearchBarPosition()}>
+					<div ref={searchBarAnimRef} className={getSearchBarPosition()}>
 						{searchForm}
 					</div>
 
