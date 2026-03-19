@@ -53,7 +53,7 @@ function Home() {
 	const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
 	const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-	const searchInputRef = useRef<HTMLInputElement>(null);
+	const searchInputRef = useRef<HTMLTextAreaElement>(null);
 	const searchBarAnimRef = useRef<HTMLDivElement>(null);
 	const latestTurnRef = useRef<HTMLDivElement>(null);
 	const router = useRouter();
@@ -383,13 +383,13 @@ function Home() {
 	const getSearchBarPosition = () => {
 		switch (uiState) {
 		  case 'initial':
-			return 'absolute top-1/2 -translate-y-1/2 left-4 right-4';
+			return 'absolute top-[45%] left-4 right-4';
 		  case 'animating':
 			return 'absolute left-4 right-4 transform-gpu transition-all duration-500 ease-in-out animate-to-top';
 		  case 'searched':
 			return 'hidden'; // Rendered outside PageLayout when searched
 		  default:
-			return 'absolute top-1/2 -translate-y-1/2 left-4 right-4';
+			return 'absolute top-[45%] left-4 right-4';
 		}
 	  };
 	  
@@ -414,24 +414,37 @@ function Home() {
 
 	const searchForm = (
 		<form onSubmit={handleSubmit} className="relative w-full">
-			<div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+			<div className="absolute top-4 left-4 flex items-center pointer-events-none">
 				<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 				</svg>
 			</div>
-			<input
+			<textarea
 				ref={searchInputRef}
-				type="text"
+				rows={1}
 				value={searchQuery}
-				onChange={(e) => setSearchQuery(e.target.value)}
+				onChange={(e) => {
+					setSearchQuery(e.target.value);
+					requestAnimationFrame(() => {
+						const el = e.target;
+						el.style.height = 'auto';
+						el.style.height = Math.min(el.scrollHeight, 104) + 'px';
+					});
+				}}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter' && !e.shiftKey) {
+						e.preventDefault();
+						handleSubmit(e);
+					}
+				}}
 				placeholder={getPlaceholderText()}
-				className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
+				className="w-full pt-4 pb-4 pl-12 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted resize-none overflow-y-auto"
 				disabled={isSearching || uiState === 'animating'}
 			/>
 			<button
 				type="submit"
 				disabled={isSearching || uiState === 'animating'}
-				className="absolute inset-y-0 right-3 my-auto flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
+				className="absolute bottom-2 right-3 flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
 			>
 				{isSearching ? (
 					<Spinner size="sm" color="#FFFFFF" />
@@ -444,7 +457,7 @@ function Home() {
 
 			{/* "/" key hint */}
 			{(screenSize === 'lg' || screenSize === 'xl') && (
-				<div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
+				<div className="absolute right-16 top-4 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
 					<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
 					<span className="ml-1">to focus</span>
 				</div>
