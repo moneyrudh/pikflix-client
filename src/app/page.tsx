@@ -275,7 +275,7 @@ function Home() {
 				setTimeout(() => {
 					if (latestTurnRef.current) {
 						const w = window.innerWidth;
-						const offset = 110;
+						const offset = 160;
 						const y = latestTurnRef.current.getBoundingClientRect().top + window.scrollY - offset;
 						smoothScrollTo(y, 1000);
 					}
