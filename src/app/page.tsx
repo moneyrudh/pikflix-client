@@ -401,7 +401,7 @@ function Home() {
 		  case 'animating':
 			return 'absolute top-full w-full opacity-0 transition-opacity duration-1000 ease-in-out pointer-events-none';
 		  case 'searched':
-			return 'w-full pt-24 opacity-100 transition-opacity duration-300 ease-in';
+			return 'w-full pt-32 opacity-100 transition-opacity duration-300 ease-in';
 		  default:
 			return 'absolute top-full w-full opacity-0 pointer-events-none';
 		}
