@@ -53,7 +53,8 @@ function Home() {
 	const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
 	const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
-	const searchInputRef = useRef<HTMLInputElement>(null);
+	const searchInputRef = useRef<HTMLTextAreaElement>(null);
+	const submittedQueryRef = useRef<string>('');
 	const searchBarAnimRef = useRef<HTMLDivElement>(null);
 	const latestTurnRef = useRef<HTMLDivElement>(null);
 	const router = useRouter();
@@ -69,8 +70,7 @@ function Home() {
 			setHasSearched(true);
 			performSearch(queryParam);
 		} else if (queryParam && hasSearched) {
-			// Just update the search query state without re-searching
-			setSearchQuery(queryParam);
+			// URL changed but already searched — keep input clear
 			setUiState('searched');
 		}
 	}, [searchParams, hasSearched]);
@@ -175,10 +175,11 @@ function Home() {
 		if (uiState !== 'animating' || !el) return;
 
 		const onEnd = () => {
+			const query = submittedQueryRef.current;
 			setUiState('searched');
 			setHasSearched(true);
-			performSearch(searchQuery);
-			router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
+			performSearch(query);
+			router.push(`?query=${encodeURIComponent(query)}`, { scroll: false });
 		};
 
 		el.addEventListener('animationend', onEnd, { once: true });
@@ -275,7 +276,7 @@ function Home() {
 				setTimeout(() => {
 					if (latestTurnRef.current) {
 						const w = window.innerWidth;
-						const offset = 110;
+						const offset = 160;
 						const y = latestTurnRef.current.getBoundingClientRect().top + window.scrollY - offset;
 						smoothScrollTo(y, 1000);
 					}
@@ -369,13 +370,21 @@ function Home() {
 		e.preventDefault();
 		if (!searchQuery.trim() || searchQuery === undefined) return;
 
+		const query = searchQuery.trim();
+		submittedQueryRef.current = query;
+		setSearchQuery('');
+		// Reset textarea height back to single line
+		if (searchInputRef.current) {
+			searchInputRef.current.style.height = 'auto';
+		}
+
 		if (uiState === 'initial') {
 			// Start animation — animationend listener handles the transition
 			setUiState('animating');
 		} else if (uiState === 'searched') {
 			// Already in top position, update URL directly
-			router.push(`?query=${encodeURIComponent(searchQuery)}`, { scroll: false });
-			performSearch(searchQuery);
+			router.push(`?query=${encodeURIComponent(query)}`, { scroll: false });
+			performSearch(query);
 		}
 	};
 
@@ -383,13 +392,13 @@ function Home() {
 	const getSearchBarPosition = () => {
 		switch (uiState) {
 		  case 'initial':
-			return 'absolute top-1/2 -translate-y-1/2 left-4 right-4';
+			return 'absolute top-[45%] left-4 right-4';
 		  case 'animating':
 			return 'absolute left-4 right-4 transform-gpu transition-all duration-500 ease-in-out animate-to-top';
 		  case 'searched':
 			return 'hidden'; // Rendered outside PageLayout when searched
 		  default:
-			return 'absolute top-1/2 -translate-y-1/2 left-4 right-4';
+			return 'absolute top-[45%] left-4 right-4';
 		}
 	  };
 	  
@@ -401,7 +410,7 @@ function Home() {
 		  case 'animating':
 			return 'absolute top-full w-full opacity-0 transition-opacity duration-1000 ease-in-out pointer-events-none';
 		  case 'searched':
-			return 'w-full pt-24 opacity-100 transition-opacity duration-300 ease-in';
+			return 'w-full pt-32 opacity-100 transition-opacity duration-300 ease-in';
 		  default:
 			return 'absolute top-full w-full opacity-0 pointer-events-none';
 		}
@@ -414,24 +423,38 @@ function Home() {
 
 	const searchForm = (
 		<form onSubmit={handleSubmit} className="relative w-full">
-			<div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+			{/* <div className="absolute top-4 left-4 flex items-center pointer-events-none">
 				<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
 				</svg>
-			</div>
-			<input
+			</div> */}
+			<textarea
 				ref={searchInputRef}
-				type="text"
+				rows={1}
 				value={searchQuery}
-				onChange={(e) => setSearchQuery(e.target.value)}
+				onChange={(e) => {
+					setSearchQuery(e.target.value);
+					requestAnimationFrame(() => {
+						const el = e.target;
+						el.style.height = 'auto';
+						el.style.height = Math.min(el.scrollHeight, 104) + 'px';
+						el.scrollTop = el.scrollHeight;
+					});
+				}}
+				onKeyDown={(e) => {
+					if (e.key === 'Enter' && !e.shiftKey) {
+						e.preventDefault();
+						handleSubmit(e);
+					}
+				}}
 				placeholder={getPlaceholderText()}
-				className="w-full py-4 pl-12 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted"
+				className="w-full pt-4 pb-4 pl-5 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted resize-none overflow-y-auto"
 				disabled={isSearching || uiState === 'animating'}
 			/>
 			<button
 				type="submit"
 				disabled={isSearching || uiState === 'animating'}
-				className="absolute inset-y-0 right-3 my-auto flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
+				className="absolute bottom-[14px] right-[8px] flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
 			>
 				{isSearching ? (
 					<Spinner size="sm" color="#FFFFFF" />
@@ -444,7 +467,7 @@ function Home() {
 
 			{/* "/" key hint */}
 			{(screenSize === 'lg' || screenSize === 'xl') && (
-				<div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
+				<div className="absolute right-16 top-4 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
 					<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
 					<span className="ml-1">to focus</span>
 				</div>
@@ -457,7 +480,13 @@ function Home() {
 			{/* Fixed search bar - rendered outside PageLayout when in searched state */}
 			{/* Glass overlay above search bar — blurs cards as they scroll behind */}
 			{uiState === 'searched' && searchBarScrolled && (
-				<div className="fixed top-0 left-0 right-0 h-[92px] z-40 bg-theme-background/60 backdrop-blur-md pointer-events-none" />
+				<div
+					className="fixed top-0 left-0 right-0 h-[130px] z-40 backdrop-blur-md pointer-events-none"
+					style={{
+						maskImage: 'linear-gradient(to bottom, black 0%, black 40%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.2) 80%, transparent 100%)',
+						WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 40%, rgba(0,0,0,0.7) 60%, rgba(0,0,0,0.2) 80%, transparent 100%)',
+					}}
+				/>
 			)}
 
 			{uiState === 'searched' && (
@@ -531,7 +560,7 @@ function Home() {
 							}));
 							if (isSearching || (currentMovies && currentMovies.length > 0)) {
 								allTurns.push({
-									query: searchQuery,
+									query: submittedQueryRef.current,
 									movies: currentMovies || [],
 									loading: isSearching,
 								});
