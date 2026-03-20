@@ -422,7 +422,7 @@ function Home() {
 	};
 
 	const searchForm = (
-		<form onSubmit={handleSubmit} className="relative w-full">
+		<form onSubmit={handleSubmit} className="relative w-full group">
 			{/* <div className="absolute top-4 left-4 flex items-center pointer-events-none">
 				<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -467,7 +467,7 @@ function Home() {
 
 			{/* "/" key hint */}
 			{(screenSize === 'lg' || screenSize === 'xl') && (
-				<div className="absolute right-16 top-4 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none">
+				<div className="absolute right-16 top-4 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none group-focus-within:hidden">
 					<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
 					<span className="ml-1">to focus</span>
 				</div>
