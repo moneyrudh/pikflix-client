@@ -1,23 +1,20 @@
 // components/SearchResults.tsx
 import React from 'react';
-import { Movie } from '@/types/movie';
+import { Content, getContentTitle, getContentDate } from '@/types/movie';
 import MovieCard from './MovieCard';
 import MovieCardSkeleton from './MovieCardSkeleton';
 
 interface SearchResultsProps {
-    movies: Movie[] | null;
+    items: Content[] | null;
     isLoading: boolean;
-    selectedMovieId?: number | null;
-    onMovieClick: (movieId: number) => void;
+    selectedItemId?: number | null;
+    onItemClick: (itemId: number) => void;
 }
 
-// Update SearchResults to show partial results
-const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, selectedMovieId, onMovieClick }) => {
-    // Calculate how many placeholders we need
-    const loadedCount = movies?.length || 0;
+const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selectedItemId, onItemClick }) => {
+    const loadedCount = items?.length || 0;
     const placeholdersNeeded = isLoading ? Math.max(0, 9 - loadedCount) : 0;
 
-    // Show full skeleton grid when loading with no movies yet
     if (isLoading && loadedCount === 0) {
         return (
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
@@ -28,29 +25,25 @@ const SearchResults: React.FC<SearchResultsProps> = ({ movies, isLoading, select
         );
     }
 
-    // If no movies and not loading, return null
-    if (!movies || movies.length === 0) {
+    if (!items || items.length === 0) {
         return null;
     }
 
-    // Render loaded movies + placeholders for ones still loading
     return (
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
-            {/* Show movies we have so far */}
-            {movies.map((movie) => (
+            {items.map((item) => (
                 <MovieCard
-                    key={movie.id}
-                    id={movie.id}
-                    title={movie.title}
-                    posterPath={movie.poster_path}
-                    releaseDate={movie.release_date}
-                    voteAverage={movie.vote_average}
-                    isSelected={movie.id === selectedMovieId}
-                    onClick={onMovieClick}
+                    key={item.id}
+                    id={item.id}
+                    title={getContentTitle(item)}
+                    posterPath={item.poster_path}
+                    releaseDate={getContentDate(item)}
+                    voteAverage={item.vote_average}
+                    isSelected={item.id === selectedItemId}
+                    onClick={onItemClick}
                 />
             ))}
 
-            {/* Show placeholders for movies still loading */}
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                 <MovieCardSkeleton key={`remaining-skeleton-${index}`} />
             ))}
