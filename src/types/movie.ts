@@ -30,6 +30,20 @@ export interface Collection {
 	backdrop_path: string | null;
 }
 
+export interface Network {
+	id: number;
+	logo_path: string | null;
+	name: string;
+	origin_country: string;
+}
+
+export interface Creator {
+	id: number;
+	credit_id: string | null;
+	name: string;
+	profile_path: string | null;
+}
+
 export interface Movie {
 	id: number;
 	imdb_id: string | null;
@@ -57,7 +71,76 @@ export interface Movie {
 	production_countries: ProductionCountry[];
 	spoken_languages: SpokenLanguage[];
 	reason?: string;
+	content_type: 'movie';
 }
+
+export interface Season {
+	air_date: string | null;
+	episode_count: number | null;
+	id: number;
+	name: string | null;
+	overview: string | null;
+	poster_path: string | null;
+	season_number: number | null;
+	vote_average: number | null;
+}
+
+export interface EpisodeInfo {
+	id: number;
+	name: string | null;
+	overview: string | null;
+	vote_average: number | null;
+	vote_count: number | null;
+	air_date: string | null;
+	episode_number: number | null;
+	episode_type: string | null;
+	production_code: string | null;
+	runtime: number | null;
+	season_number: number | null;
+	show_id: number | null;
+	still_path: string | null;
+}
+
+export interface Show {
+	id: number;
+	name: string;
+	original_name: string | null;
+	original_language: string | null;
+	overview: string | null;
+	tagline: string | null;
+	status: string | null;
+	first_air_date: string | null;
+	last_air_date: string | null;
+	number_of_seasons: number | null;
+	number_of_episodes: number | null;
+	episode_run_time: number[];
+	adult: boolean;
+	vote_average: number;
+	vote_count: number;
+	popularity: number;
+	poster_path: string | null;
+	backdrop_path: string | null;
+	homepage: string | null;
+	genres: Genre[];
+	production_companies: ProductionCompany[];
+	production_countries: ProductionCountry[];
+	spoken_languages: SpokenLanguage[];
+	networks: Network[];
+	created_by: Creator[];
+	origin_country: string[] | null;
+	languages: string[] | null;
+	seasons: Season[] | null;
+	last_episode_to_air: EpisodeInfo | null;
+	next_episode_to_air: EpisodeInfo | null;
+	in_production: boolean | null;
+	type: string | null;
+	reason?: string;
+	content_type: 'show';
+}
+
+export type ContentType = 'movie' | 'show';
+export type ContentTypeMode = 'movie' | 'show' | 'both';
+export type Content = Movie | Show;
 
 export interface MovieRecommendationResponse {
 	recommendations: Movie[];
@@ -72,7 +155,7 @@ export interface RecommendationSummary {
 
 export interface ConversationTurn {
 	query: string;
-	movies: Movie[];
+	items: Content[];
 	recommendations: RecommendationSummary[];
 }
 
@@ -103,4 +186,13 @@ export interface ProviderResponse {
 	results: {
 		[country: string]: ProviderData;
 	};
+}
+
+// Helper to normalize content to card-friendly props
+export function getContentTitle(item: Content): string {
+	return item.content_type === 'show' ? item.name : item.title;
+}
+
+export function getContentDate(item: Content): string | null {
+	return item.content_type === 'show' ? item.first_air_date : item.release_date;
 }
