@@ -1,6 +1,6 @@
-// app/api/movies/route.ts
+// app/api/recommendations/route.ts
 import { NextRequest } from 'next/server';
-import { ContentType, ContentTypeMode } from '@/types/movie';
+import { ContentType, ContentTypeMode } from '@/types/content';
 
 export const runtime = 'edge';
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       requestBody.history = history;
     }
 
-    const response = await fetch(`${apiUrl}/api/movies/recommendations`, {
+    const response = await fetch(`${apiUrl}/api/recommendations/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/x-ndjson' }
     });
   } catch (error) {
-    console.error('Error in movie API route:', error);
+    console.error('Error in recommendations API route:', error);
     return new Response(
       JSON.stringify({ error: 'An unexpected error occurred' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

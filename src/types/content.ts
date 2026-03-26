@@ -1,4 +1,4 @@
-// types/movie.ts
+// types/content.ts
 
 export interface Genre {
 	id: number;
@@ -160,8 +160,8 @@ export type UIState = (typeof UIState)[keyof typeof UIState];
 
 export type Content = Movie | Show;
 
-export interface MovieRecommendationResponse {
-	recommendations: Movie[];
+export interface RecommendationResponse {
+	recommendations: Content[];
 	query: string;
 }
 

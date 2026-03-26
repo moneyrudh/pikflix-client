@@ -1,16 +1,16 @@
-// components/MovieDetailsPanel.tsx
+// components/ContentDetailsPanel.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { Content, ContentType, Movie, Show, ProviderData, ProviderResponse, getContentTitle, getContentDate } from '@/types/movie';
+import { Content, ContentType, Movie, Show, ProviderData, ProviderResponse, getContentTitle, getContentDate } from '@/types/content';
 import ProvidersSection, { ProvidersSkeletonSection } from './ProvidersSection';
 
-interface MovieDetailsPanelProps {
+interface ContentDetailsPanelProps {
   item: Content | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ item, isOpen, onClose }) => {
+const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen, onClose }) => {
   const [providers, setProviders] = useState<ProviderData | null>(null);
   const [isLoadingProviders, setIsLoadingProviders] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -460,4 +460,4 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ item, isOpen, onC
   );
 };
 
-export default MovieDetailsPanel;
+export default ContentDetailsPanel;

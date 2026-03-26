@@ -1,10 +1,10 @@
-// components/MovieCard.tsx
+// components/ContentCard.tsx
 import React from 'react';
 import Image from 'next/image';
-import MoviePlaceholder from './MoviePlaceholder';
-import { ContentType } from '@/types/movie';
+import ContentPlaceholder from './ContentPlaceholder';
+import { ContentType } from '@/types/content';
 
-interface MovieCardProps {
+interface ContentCardProps {
   id: number;
   title: string;
   posterPath: string | null;
@@ -15,7 +15,7 @@ interface MovieCardProps {
   onClick: (movieId: number) => void;
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({
+const ContentCard: React.FC<ContentCardProps> = ({
   id,
   title,
   posterPath,
@@ -92,11 +92,11 @@ const MovieCard: React.FC<MovieCardProps> = ({
             </div>
           </>
         ) : (
-          <MoviePlaceholder title={title} />
+          <ContentPlaceholder title={title} />
         )}
       </div>
     </div>
   );
 };
 
-export default MovieCard;
+export default ContentCard;

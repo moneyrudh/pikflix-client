@@ -1,8 +1,8 @@
 // components/SearchResults.tsx
 import React from 'react';
-import { Content, ContentType, getContentTitle, getContentDate } from '@/types/movie';
-import MovieCard from './MovieCard';
-import MovieCardSkeleton from './MovieCardSkeleton';
+import { Content, ContentType, getContentTitle, getContentDate } from '@/types/content';
+import ContentCard from './ContentCard';
+import ContentCardSkeleton from './ContentCardSkeleton';
 
 interface SearchResultsProps {
     items: Content[] | null;
@@ -20,7 +20,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
         return (
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
                 {Array.from({ length: 9 }).map((_, index) => (
-                    <MovieCardSkeleton key={`skeleton-${index}`} />
+                    <ContentCardSkeleton key={`skeleton-${index}`} />
                 ))}
             </div>
         );
@@ -33,7 +33,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
     return (
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
             {items.map((item) => (
-                <MovieCard
+                <ContentCard
                     key={item.id}
                     id={item.id}
                     title={getContentTitle(item)}
@@ -47,7 +47,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
             ))}
 
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
-                <MovieCardSkeleton key={`remaining-skeleton-${index}`} />
+                <ContentCardSkeleton key={`remaining-skeleton-${index}`} />
             ))}
         </div>
     );

@@ -1,6 +1,6 @@
 // app/api/providers/route.ts
 import { NextRequest } from 'next/server';
-import { ContentType } from '@/types/movie';
+import { ContentType } from '@/types/content';
 
 export const runtime = 'edge';
 

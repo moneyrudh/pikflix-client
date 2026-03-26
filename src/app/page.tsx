@@ -5,9 +5,9 @@ import React, { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
-import MovieDetailsPanel from '@/components/MovieDetailsPanel';
+import ContentDetailsPanel from '@/components/ContentDetailsPanel';
 import Spinner from '@/components/Spinner';
-import { Content, ContentType, ContentTypeMode, UIState, ConversationTurn, RecommendationSummary, getContentTitle, getContentDate } from '@/types/movie';
+import { Content, ContentType, ContentTypeMode, UIState, ConversationTurn, RecommendationSummary, getContentTitle, getContentDate } from '@/types/content';
 
 export default function Page() {
 	return (
@@ -124,11 +124,11 @@ function Home() {
 	// Check for item ID in URL on load
 	useEffect(() => {
 		if (firstLoadRef.current) {
-			const movieIdParam = searchParams.get('movie');
-			if (movieIdParam && (sessionHistory.length > 0 || currentItems?.length)) {
-				const movieId = parseInt(movieIdParam, 10);
-				if (!isNaN(movieId)) {
-					setSelectedItemId(movieId);
+			const contentIdParam = searchParams.get('content');
+			if (contentIdParam && (sessionHistory.length > 0 || currentItems?.length)) {
+				const contentId = parseInt(contentIdParam, 10);
+				if (!isNaN(contentId)) {
+					setSelectedItemId(contentId);
 					setIsDetailsPanelOpen(true);
 				}
 			}
@@ -266,7 +266,7 @@ function Home() {
 			const history = buildApiHistory();
 
 			// Single request — backend handles "both" mode natively
-			const response = await fetch('/api/movies', {
+			const response = await fetch('/api/recommendations', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -596,7 +596,7 @@ function Home() {
 			</PageLayout>
 
 			{/* Details panel */}
-			<MovieDetailsPanel
+			<ContentDetailsPanel
 				item={selectedItem}
 				isOpen={isDetailsPanelOpen}
 				onClose={closeDetailsPanel}

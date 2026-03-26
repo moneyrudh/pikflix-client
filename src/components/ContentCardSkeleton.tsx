@@ -1,7 +1,7 @@
-// components/MovieCardSkeleton.tsx
+// components/ContentCardSkeleton.tsx
 import React from 'react';
 
-const MovieCardSkeleton: React.FC = () => {
+const ContentCardSkeleton: React.FC = () => {
   return (
     <div className="bg-theme-surface rounded-lg overflow-hidden shadow-md h-full">
       {/* Poster placeholder with correct aspect ratio */}
@@ -28,4 +28,4 @@ const MovieCardSkeleton: React.FC = () => {
   );
 };
 
-export default MovieCardSkeleton;
+export default ContentCardSkeleton;
