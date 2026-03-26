@@ -1,29 +1,29 @@
 // app/api/providers/route.ts
 import { NextRequest } from 'next/server';
+import { ContentType } from '@/types/content';
 
 export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { movie_id, region } = body;
+    const { content_id, content_type = ContentType.MOVIE, region } = body;
 
-    if (!movie_id || !region) {
+    if (!content_id || !region) {
       return new Response(
-        JSON.stringify({ error: 'movie_id and region parameters are required' }),
+        JSON.stringify({ error: 'content_id and region parameters are required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Call our FastAPI backend
     const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
-    
+
     const response = await fetch(`${apiUrl}/api/providers/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ movie_id, region }),
+      body: JSON.stringify({ content_id, content_type, region }),
     });
 
     if (!response.ok) {

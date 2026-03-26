@@ -1,59 +1,51 @@
-// components/MovieDetailsPanel.tsx
+// components/ContentDetailsPanel.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { Movie, ProviderData, ProviderResponse } from '@/types/movie';
+import { Content, ContentType, Movie, Show, ProviderData, ProviderResponse, getContentTitle, getContentDate } from '@/types/content';
 import ProvidersSection, { ProvidersSkeletonSection } from './ProvidersSection';
 
-interface MovieDetailsPanelProps {
-  movie: Movie | null;
+interface ContentDetailsPanelProps {
+  item: Content | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, onClose }) => {
+const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen, onClose }) => {
   const [providers, setProviders] = useState<ProviderData | null>(null);
   const [isLoadingProviders, setIsLoadingProviders] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  
-  // Get user's region - ideally this would come from a user setting
-  // For now, we'll use a fixed "US" as the region, but this could be expanded
+
   const region = "US";
-  
-  // Fetch providers when a movie is selected and panel is open
-  const fetchProviders = useCallback(async (movieId: number) => {
-    // Clear previous state
+
+  const fetchProviders = useCallback(async (contentId: number, contentType: string) => {
     setProviders(null);
     setError(null);
     setIsLoadingProviders(true);
-    
-    // Create a new AbortController for this request
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
-    
+
     try {
       const response = await fetch('/api/providers/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ movie_id: movieId, region }),
+        body: JSON.stringify({ content_id: contentId, content_type: contentType, region }),
         signal: abortControllerRef.current.signal
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch providers');
       }
-      
+
       const data: ProviderResponse = await response.json();
-      
-      // Extract provider data for the requested region
       const regionData = data.results[region] || null;
       setProviders(regionData);
     } catch (err) {
-      // Don't set error if it was due to abort
       if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Error fetching providers:', err);
         setError(err.message);
@@ -62,31 +54,31 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
       setIsLoadingProviders(false);
     }
   }, [region]);
-  
-  // Effect to fetch providers when movie changes
+
   useEffect(() => {
-    if (movie && isOpen) {
-      fetchProviders(movie.id);
+    if (item && isOpen) {
+      fetchProviders(item.id, item.content_type);
     }
-    
-    // Cleanup function to cancel any in-flight requests
+
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
-      // Reset state if panel is closed
       if (!isOpen) {
         setProviders(null);
         setIsLoadingProviders(false);
         setError(null);
       }
     };
-  }, [movie, isOpen, fetchProviders]);
-  
-  if (!movie) return null;
+  }, [item, isOpen, fetchProviders]);
 
-  // Format currency
+  if (!item) return null;
+
+  const isShow = item.content_type === ContentType.SHOW;
+  const title = getContentTitle(item);
+  const dateStr = getContentDate(item);
+
   const formatCurrency = (amount: number) => {
     if (!amount || amount === 0) return 'N/A';
     return new Intl.NumberFormat('en-US', {
@@ -97,7 +89,6 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
     }).format(amount);
   };
 
-  // Format minutes to hours and minutes
   const formatRuntime = (minutes: number | null) => {
     if (!minutes) return 'N/A';
     const hours = Math.floor(minutes / 60);
@@ -105,32 +96,35 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
     return `${hours}h ${mins}m`;
   };
 
-  const formatReleaseDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  // Determine if backdrop exists
-  const hasBackdrop = movie.backdrop_path !== null && movie.backdrop_path !== '';
+  const hasBackdrop = item.backdrop_path !== null && item.backdrop_path !== '';
+
+  // Show-specific helpers
+  const show = isShow ? (item as Show) : null;
+  const movie = !isShow ? (item as Movie) : null;
 
   return (
-    <div 
+    <div
       className={`fixed top-0 bottom-0 right-0 bg-theme-surface shadow-2xl overflow-y-auto transition-all duration-300 ease-in-out z-50 xl:w-1/2 w-full details-panel ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
-      {/* Close button - always visible in top corner */}
-      <button 
+      {/* Close button */}
+      <button
         onClick={onClose}
         className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 backdrop-blur-sm transition-all duration-300"
         aria-label="Close details"
       >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          className="h-6 w-6" 
-          fill="none" 
-          viewBox="0 0 24 24" 
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
           stroke="currentColor"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -142,8 +136,8 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
         <div className="relative w-full aspect-video">
           {hasBackdrop ? (
             <Image
-              src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`}
-              alt={`${movie.title} backdrop`}
+              src={`https://image.tmdb.org/t/p/w1280${item.backdrop_path}`}
+              alt={`${title} backdrop`}
               className="object-cover"
               fill
               priority
@@ -152,16 +146,14 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
           ) : (
             <div className="w-full h-full bg-gradient-to-b from-theme-primary/20 to-theme-surface"></div>
           )}
-          
-          {/* Dark gradient overlay for text readability */}
+
           <div className="absolute inset-0 bg-gradient-to-t from-theme-surface via-theme-surface/80 to-transparent"></div>
 
-          {/* Poster image absolutely positioned in this container */}
           <div className="absolute bottom-0 left-8 transform translate-y-1/2 w-28 h-40 md:w-32 md:h-48 shadow-xl rounded-lg overflow-hidden border-2 border-theme-surface">
-            {movie.poster_path ? (
+            {item.poster_path ? (
               <Image
-                src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                alt={`${movie.title} poster`}
+                src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
+                alt={`${title} poster`}
                 className="object-cover"
                 fill
                 sizes="(max-width: 768px) 112px, 128px"
@@ -174,14 +166,13 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
           </div>
         </div>
 
-        {/* Content container - with extra padding to account for the poster */}
         <div className="px-8 pt-24 pb-8">
           {/* Title and year */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-theme-text">{movie.title}</h1>
-            {movie.release_date && (
+            <h1 className="text-3xl font-bold text-theme-text">{title}</h1>
+            {dateStr && (
               <p className="text-theme-text-muted text-xl">
-                {new Date(movie.release_date).getFullYear()}
+                {new Date(dateStr).getFullYear()}
               </p>
             )}
           </div>
@@ -194,8 +185,8 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               </div>
-              <div className="text-2xl font-bold text-theme-text">{movie.vote_average?.toFixed(1) || 'N/A'}</div>
-              <div className="text-xs text-theme-text-muted">{movie.vote_count} votes</div>
+              <div className="text-2xl font-bold text-theme-text">{item.vote_average?.toFixed(1) || 'N/A'}</div>
+              <div className="text-xs text-theme-text-muted">{item.vote_count} votes</div>
             </div>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-theme-none mb-2">
@@ -203,8 +194,17 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
               </div>
-              <div className="text-lg font-bold text-theme-text">{formatRuntime(movie.runtime)}</div>
-              <div className="text-xs text-theme-text-muted">Runtime</div>
+              {isShow ? (
+                <>
+                  <div className="text-lg font-bold text-theme-text">{show!.number_of_seasons ?? 'N/A'}</div>
+                  <div className="text-xs text-theme-text-muted">Seasons</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-lg font-bold text-theme-text">{formatRuntime(movie!.runtime)}</div>
+                  <div className="text-xs text-theme-text-muted">Runtime</div>
+                </>
+              )}
             </div>
             <div className="text-center">
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-theme-none mb-2">
@@ -213,51 +213,92 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
                 </svg>
               </div>
               <div className="text-lg font-bold text-theme-text">
-                {movie.genres?.length ? movie.genres[0].name : 'N/A'}
+                {item.genres?.length ? item.genres[0].name : 'N/A'}
               </div>
               <div className="text-xs text-theme-text-muted">Primary Genre</div>
             </div>
           </div>
 
           {/* Tagline */}
-          {movie.tagline && (
+          {item.tagline && (
             <div className="mb-6 italic text-theme-text-muted text-lg border-l-4 border-theme-primary/30 pl-4 py-1">
-              "{movie.tagline}"
+              &ldquo;{item.tagline}&rdquo;
+            </div>
+          )}
+
+          {/* In Production badge for shows */}
+          {isShow && show!.in_production && (
+            <div className="mb-6">
+              <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-medium border border-green-500/30">
+                Currently In Production
+              </span>
             </div>
           )}
 
           {/* Overview */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-3 text-theme-text">Overview</h2>
-            <p className="text-theme-text leading-relaxed">{movie.overview || 'No overview available.'}</p>
+            <p className="text-theme-text leading-relaxed">{item.overview || 'No overview available.'}</p>
           </div>
 
           {/* Details section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left column */}
             <div>
-              {/* Release info */}
+              {/* Date info */}
               <div className="mb-6">
-                <h2 className="text-lg font-semibold mb-2 text-theme-text">Release Info</h2>
+                <h2 className="text-lg font-semibold mb-2 text-theme-text">
+                  {isShow ? 'Airing Info' : 'Release Info'}
+                </h2>
                 <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-theme-text-muted">Release Date:</span>
-                    <span className="text-theme-text font-medium">{formatReleaseDate(movie.release_date)}</span>
-                  </div>
+                  {isShow ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-theme-text-muted">First Aired:</span>
+                        <span className="text-theme-text font-medium">{formatDate(show!.first_air_date)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-theme-text-muted">Last Aired:</span>
+                        <span className="text-theme-text font-medium">{formatDate(show!.last_air_date)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">Release Date:</span>
+                      <span className="text-theme-text font-medium">{formatDate(movie!.release_date)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-theme-text-muted">Status:</span>
-                    <span className="text-theme-text font-medium">{movie.status || 'N/A'}</span>
+                    <span className="text-theme-text font-medium">{item.status || 'N/A'}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Genres - Updated with better chip styling */}
+              {/* Show-specific: Episodes */}
+              {isShow && (
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold mb-2 text-theme-text">Episodes</h2>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">Seasons:</span>
+                      <span className="text-theme-text font-medium">{show!.number_of_seasons ?? 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">Total Episodes:</span>
+                      <span className="text-theme-text font-medium">{show!.number_of_episodes ?? 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Genres */}
               <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-2 text-theme-text">Genres</h2>
                 <div className="flex flex-wrap gap-2">
-                  {movie.genres?.length > 0 ? (
-                    movie.genres.map(genre => (
-                      <span 
+                  {item.genres?.length > 0 ? (
+                    item.genres.map(genre => (
+                      <span
                         key={genre.id}
                         className="px-3 py-1 bg-theme-text-muted text-theme-background font-bold rounded-full text-sm shadow-sm border border-theme-text-muted hover:-translate-y-1 transition-transform duration-200"
                       >
@@ -270,13 +311,13 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
                 </div>
               </div>
 
-              {/* NEW: PROVIDERS SECTION */}
+              {/* Providers */}
               {isLoadingProviders ? (
                 <ProvidersSkeletonSection />
               ) : (
-                <ProvidersSection 
-                  providerData={providers} 
-                  isLoading={false} 
+                <ProvidersSection
+                  providerData={providers}
+                  isLoading={false}
                 />
               )}
 
@@ -284,8 +325,8 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
               <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-2 text-theme-text">Production Countries</h2>
                 <div className="space-y-1">
-                  {movie.production_countries?.length > 0 ? (
-                    movie.production_countries.map(country => (
+                  {item.production_countries?.length > 0 ? (
+                    item.production_countries.map(country => (
                       <div key={country.iso_3166_1} className="text-theme-text">
                         {country.name}
                       </div>
@@ -299,27 +340,63 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
 
             {/* Right column */}
             <div>
-              {/* Financial info */}
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold mb-2 text-theme-text">Financial</h2>
-                <div className="space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-theme-text-muted">Budget:</span>
-                    <span className="text-theme-text font-medium">{formatCurrency(movie.budget)}</span>
+              {/* Movie: Financial info / Show: Networks & Creators */}
+              {isShow ? (
+                <>
+                  {/* Networks */}
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-2 text-theme-text">Networks</h2>
+                    <div className="space-y-1">
+                      {show!.networks?.length > 0 ? (
+                        show!.networks.map(network => (
+                          <div key={network.id} className="text-theme-text">
+                            {network.name}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-theme-text-muted">No networks listed</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-theme-text-muted">Revenue:</span>
-                    <span className="text-theme-text font-medium">{formatCurrency(movie.revenue)}</span>
+
+                  {/* Created By */}
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-2 text-theme-text">Created By</h2>
+                    <div className="space-y-1">
+                      {show!.created_by?.length > 0 ? (
+                        show!.created_by.map(creator => (
+                          <div key={creator.id} className="text-theme-text">
+                            {creator.name}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-theme-text-muted">No creators listed</span>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold mb-2 text-theme-text">Financial</h2>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">Budget:</span>
+                      <span className="text-theme-text font-medium">{formatCurrency(movie!.budget)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-theme-text-muted">Revenue:</span>
+                      <span className="text-theme-text font-medium">{formatCurrency(movie!.revenue)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Production Companies */}
               <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-2 text-theme-text">Production Companies</h2>
                 <div className="space-y-1">
-                  {movie.production_companies?.length > 0 ? (
-                    movie.production_companies.map(company => (
+                  {item.production_companies?.length > 0 ? (
+                    item.production_companies.map(company => (
                       <div key={company.id} className="text-theme-text">
                         {company.name}
                       </div>
@@ -334,8 +411,8 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
               <div className="mb-6">
                 <h2 className="text-lg font-semibold mb-2 text-theme-text">Spoken Languages</h2>
                 <div className="space-y-1">
-                  {movie.spoken_languages?.length > 0 ? (
-                    movie.spoken_languages.map(language => (
+                  {item.spoken_languages?.length > 0 ? (
+                    item.spoken_languages.map(language => (
                       <div key={language.iso_639_1} className="text-theme-text">
                         {language.english_name}
                       </div>
@@ -348,12 +425,12 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
             </div>
           </div>
 
-          {/* External links - Updated IMDB button for better visibility */}
+          {/* External links */}
           <div className="mt-8 flex space-x-4">
-            {movie.homepage && (
-              <a 
-                href={movie.homepage} 
-                target="_blank" 
+            {item.homepage && (
+              <a
+                href={item.homepage}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 hover:bg-theme-primary hover:text-theme-background text-theme-primary rounded-lg transition-colors duration-300 inline-flex items-center"
               >
@@ -363,10 +440,10 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
                 Official Website
               </a>
             )}
-            {movie.imdb_id && (
-              <a 
-                href={`https://www.imdb.com/title/${movie.imdb_id}`} 
-                target="_blank" 
+            {!isShow && movie!.imdb_id && (
+              <a
+                href={`https://www.imdb.com/title/${movie!.imdb_id}`}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-2 bg-[#F5C518]/0 hover:bg-[#F5C518]/30 text-[#f8c50d] font-bold rounded-lg transition-colors duration-300 inline-flex items-center"
               >
@@ -383,4 +460,4 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ movie, isOpen, on
   );
 };
 
-export default MovieDetailsPanel;
+export default ContentDetailsPanel;

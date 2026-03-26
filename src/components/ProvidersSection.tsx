@@ -1,7 +1,7 @@
 // components/ProvidersSection.tsx
 import React, { JSX, useState } from 'react';
 import Image from 'next/image';
-import { ProviderData, Provider } from '@/types/movie';
+import { ProviderData, Provider } from '@/types/content';
 
 interface ProvidersSectionProps {
   providerData: ProviderData | null;

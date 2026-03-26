@@ -1,11 +1,11 @@
-// components/MoviePlaceholder.tsx
+// components/ContentPlaceholder.tsx
 import React from 'react';
 
-interface MoviePlaceholderProps {
+interface ContentPlaceholderProps {
   title?: string;
 }
 
-const MoviePlaceholder: React.FC<MoviePlaceholderProps> = ({ title }) => {
+const ContentPlaceholder: React.FC<ContentPlaceholderProps> = ({ title }) => {
   return (
     <div className="relative aspect-[2/3] w-full flex items-center justify-center bg-theme-surface/50">
       <div className="text-center p-4">
@@ -25,4 +25,4 @@ const MoviePlaceholder: React.FC<MoviePlaceholderProps> = ({ title }) => {
   );
 };
 
-export default MoviePlaceholder;
+export default ContentPlaceholder;
