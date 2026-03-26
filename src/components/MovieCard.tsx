@@ -76,7 +76,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
               
               {/* Year and rating row with flex layout */}
               <div className="flex justify-between items-center">
-                <span className="text-gray-200 text-xs font-medium tracking-wider opacity-80">
+                <span className="text-gray-200 text-xs font-medium tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                   {year}{contentType && <> · {contentType === ContentType.SHOW ? 'Show' : 'Movie'}</>}
                 </span>
                 
