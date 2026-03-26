@@ -1,7 +1,7 @@
 // components/MovieDetailsPanel.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
-import { Content, Movie, Show, ProviderData, ProviderResponse, getContentTitle, getContentDate } from '@/types/movie';
+import { Content, ContentType, Movie, Show, ProviderData, ProviderResponse, getContentTitle, getContentDate } from '@/types/movie';
 import ProvidersSection, { ProvidersSkeletonSection } from './ProvidersSection';
 
 interface MovieDetailsPanelProps {
@@ -75,7 +75,7 @@ const MovieDetailsPanel: React.FC<MovieDetailsPanelProps> = ({ item, isOpen, onC
 
   if (!item) return null;
 
-  const isShow = item.content_type === 'show';
+  const isShow = item.content_type === ContentType.SHOW;
   const title = getContentTitle(item);
   const dateStr = getContentDate(item);
 

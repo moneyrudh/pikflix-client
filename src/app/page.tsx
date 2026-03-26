@@ -7,7 +7,7 @@ import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
 import MovieDetailsPanel from '@/components/MovieDetailsPanel';
 import Spinner from '@/components/Spinner';
-import { Content, ContentTypeMode, ConversationTurn, RecommendationSummary, getContentTitle, getContentDate } from '@/types/movie';
+import { Content, ContentType, ContentTypeMode, UIState, ConversationTurn, RecommendationSummary, getContentTitle, getContentDate } from '@/types/movie';
 
 export default function Page() {
 	return (
@@ -21,12 +21,12 @@ function Home() {
 	const [searchQuery, setSearchQuery] = useState('');
 	const [isSearching, setIsSearching] = useState(false);
 	const [hasSearched, setHasSearched] = useState(false);
-	const [uiState, setUiState] = useState<'initial' | 'animating' | 'searched'>('initial');
+	const [uiState, setUiState] = useState<UIState>(UIState.INITIAL);
 	const [sessionHistory, setSessionHistory] = useState<ConversationTurn[]>([]);
 	const [currentItems, setCurrentItems] = useState<Content[] | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [screenSize, setScreenSize] = useState('base');
-	const [contentTypeMode, setContentTypeMode] = useState<ContentTypeMode>('movie');
+	const [contentTypeMode, setContentTypeMode] = useState<ContentTypeMode>(ContentTypeMode.MOVIE);
 
 	const firstLoadRef = useRef(true);
 	const [searchBarScrolled, setSearchBarScrolled] = useState(false);
@@ -64,25 +64,25 @@ function Home() {
 	// Content type cycling
 	const cycleContentType = () => {
 		setContentTypeMode(prev => {
-			if (prev === 'movie') return 'show';
-			if (prev === 'show') return 'both';
-			return 'movie';
+			if (prev === ContentTypeMode.MOVIE) return ContentTypeMode.SHOW;
+			if (prev === ContentTypeMode.SHOW) return ContentTypeMode.BOTH;
+			return ContentTypeMode.MOVIE;
 		});
 	};
 
-	const contentTypeIcon = contentTypeMode === 'movie' ? '🎬' : contentTypeMode === 'show' ? '📺' : '🎬📺';
-	const contentTypeLabel = contentTypeMode === 'movie' ? 'Movies' : contentTypeMode === 'show' ? 'Shows' : 'Movies & Shows';
+	const contentTypeIcon = contentTypeMode === ContentTypeMode.MOVIE ? '🎬' : contentTypeMode === ContentTypeMode.SHOW ? '📺' : '🎬📺';
+	const contentTypeLabel = contentTypeMode === ContentTypeMode.MOVIE ? 'Movies' : contentTypeMode === ContentTypeMode.SHOW ? 'Shows' : 'Movies & Shows';
 
 	// Check for query in URL params on initial load
 	useEffect(() => {
 		const queryParam = searchParams.get('query');
 		if (queryParam && !hasSearched) {
 			setSearchQuery(queryParam);
-			setUiState('searched');
+			setUiState(UIState.SEARCHED);
 			setHasSearched(true);
 			performSearch(queryParam);
 		} else if (queryParam && hasSearched) {
-			setUiState('searched');
+			setUiState(UIState.SEARCHED);
 		}
 	}, [searchParams, hasSearched]);
 
@@ -162,11 +162,11 @@ function Home() {
 	// Animation transition
 	useEffect(() => {
 		const el = searchBarAnimRef.current;
-		if (uiState !== 'animating' || !el) return;
+		if (uiState !== UIState.ANIMATING || !el) return;
 
 		const onEnd = () => {
 			const query = submittedQueryRef.current;
-			setUiState('searched');
+			setUiState(UIState.SEARCHED);
 			setHasSearched(true);
 			performSearch(query);
 			router.push(`?query=${encodeURIComponent(query)}`, { scroll: false });
@@ -178,7 +178,7 @@ function Home() {
 
 	// Scroll detection for glass header
 	useEffect(() => {
-		if (uiState !== 'searched') return;
+		if (uiState !== UIState.SEARCHED) return;
 
 		const handleScroll = () => {
 			setSearchBarScrolled(window.scrollY > 20);
@@ -191,21 +191,21 @@ function Home() {
 	const getPlaceholderText = () => {
 		switch (screenSize) {
 			case 'xl':
-				return contentTypeMode === 'show'
+				return contentTypeMode === ContentTypeMode.SHOW
 					? "gripping limited series with unreliable narrators..."
 					: "something with time travel and 90s nostalgia...";
 			case 'lg':
-				return contentTypeMode === 'show'
+				return contentTypeMode === ContentTypeMode.SHOW
 					? "dark comedy shows like Succession"
 					: "time travel movies with plot twists";
 			case 'md':
-				return contentTypeMode === 'show'
+				return contentTypeMode === ContentTypeMode.SHOW
 					? "best sci-fi series ever"
 					: "mind-bending sci-fi films";
 			case 'sm':
 			case 'base':
 			default:
-				return contentTypeMode === 'show'
+				return contentTypeMode === ContentTypeMode.SHOW
 					? "thriller TV shows"
 					: "obscure horror movies";
 		}
@@ -359,9 +359,9 @@ function Home() {
 			searchInputRef.current.style.height = 'auto';
 		}
 
-		if (uiState === 'initial') {
-			setUiState('animating');
-		} else if (uiState === 'searched') {
+		if (uiState === UIState.INITIAL) {
+			setUiState(UIState.ANIMATING);
+		} else if (uiState === UIState.SEARCHED) {
 			router.push(`?query=${encodeURIComponent(query)}`, { scroll: false });
 			performSearch(query);
 		}
@@ -369,11 +369,11 @@ function Home() {
 
 	const getSearchBarPosition = () => {
 		switch (uiState) {
-		  case 'initial':
+		  case UIState.INITIAL:
 			return 'absolute top-[45%] left-4 right-4';
-		  case 'animating':
+		  case UIState.ANIMATING:
 			return 'absolute left-4 right-4 transform-gpu transition-all duration-500 ease-in-out animate-to-top';
-		  case 'searched':
+		  case UIState.SEARCHED:
 			return 'hidden';
 		  default:
 			return 'absolute top-[45%] left-4 right-4';
@@ -382,11 +382,11 @@ function Home() {
 
 	const getResultsStyle = () => {
 		switch (uiState) {
-		  case 'initial':
+		  case UIState.INITIAL:
 			return 'absolute top-full w-full opacity-0 pointer-events-none';
-		  case 'animating':
+		  case UIState.ANIMATING:
 			return 'absolute top-full w-full opacity-0 transition-opacity duration-1000 ease-in-out pointer-events-none';
-		  case 'searched':
+		  case UIState.SEARCHED:
 			return 'w-full pt-32 opacity-100 transition-opacity duration-300 ease-in';
 		  default:
 			return 'absolute top-full w-full opacity-0 pointer-events-none';
@@ -403,7 +403,7 @@ function Home() {
 				aria-label={`Switch content type. Current: ${contentTypeLabel}`}
 				title={contentTypeLabel}
 			>
-				<span className={contentTypeMode === 'both' ? 'text-xs' : 'text-sm'}>{contentTypeIcon}</span>
+				<span className={contentTypeMode === ContentTypeMode.BOTH ? 'text-xs' : 'text-sm'}>{contentTypeIcon}</span>
 			</button>
 			<textarea
 				ref={searchInputRef}
@@ -426,11 +426,11 @@ function Home() {
 				}}
 				placeholder={getPlaceholderText()}
 				className="w-full pt-4 pb-4 pl-12 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted resize-none overflow-y-auto"
-				disabled={isSearching || uiState === 'animating'}
+				disabled={isSearching || uiState === UIState.ANIMATING}
 			/>
 			<button
 				type="submit"
-				disabled={isSearching || uiState === 'animating'}
+				disabled={isSearching || uiState === UIState.ANIMATING}
 				className="absolute bottom-[14px] right-[8px] flex items-center justify-center w-10 h-10 rounded-lg bg-theme-primary text-white hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70"
 			>
 				{isSearching ? (
@@ -464,7 +464,7 @@ function Home() {
 	return (
 		<>
 			{/* Glass overlay above search bar */}
-			{uiState === 'searched' && searchBarScrolled && (
+			{uiState === UIState.SEARCHED && searchBarScrolled && (
 				<div
 					className="fixed top-0 left-0 right-0 h-[130px] z-40 backdrop-blur-md pointer-events-none"
 					style={{
@@ -474,7 +474,7 @@ function Home() {
 				/>
 			)}
 
-			{uiState === 'searched' && (
+			{uiState === UIState.SEARCHED && (
 				<div className="fixed top-16 left-0 right-0 z-50 flex justify-center pb-3">
 					<div
 						className="w-full lg:w-3/4 xl:w-1/2 px-8 transition-transform duration-500 ease-in-out"
@@ -489,7 +489,7 @@ function Home() {
 			<PageLayout isDetailsPanelOpen={isDetailsPanelOpen}>
 				<div className="relative flex flex-col items-center w-full px-4 min-h-[90vh]">
 					{/* Main title only shown before search */}
-					{uiState === 'initial' && (
+					{uiState === UIState.INITIAL && (
 						<div className="absolute short:top-[15%] tall:top-[20%] left-0 right-0 space-y-2 animate-fade-in text-center">
 							<h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
 								<span className="gradient-text">Discover</span>
@@ -502,7 +502,7 @@ function Home() {
 					)}
 
 					{/* Feature tags - only shown before search */}
-					{uiState === 'initial' && (
+					{uiState === UIState.INITIAL && (
 						<div className="absolute short:top-[60%] tall:top-[60%] left-0 right-0 flex flex-wrap justify-center gap-2 animate-fade-in">
 							{["Natural Language", "AI Powered", "Personalized"].map((tag, i) => (
 								<span
@@ -516,7 +516,7 @@ function Home() {
 					)}
 
 					{/* Bottom text - only shown before search */}
-					{uiState === 'initial' && (
+					{uiState === UIState.INITIAL && (
 						<p className="absolute short:top-[65%] tall:top-[65%] left-0 right-0 text-theme-text-muted text-center text-sm max-w-md mx-auto opacity-80 animate-fade-in">
 							Try being specific with genres, moods, themes, or even character traits to find exactly what you want.
 						</p>
@@ -571,7 +571,7 @@ function Home() {
 							));
 						})()}
 
-						{uiState === 'searched' && (sessionHistory.length > 0 || (currentItems && currentItems.length > 0)) && (
+						{uiState === UIState.SEARCHED && (sessionHistory.length > 0 || (currentItems && currentItems.length > 0)) && (
 						<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
 							Data powered by <a
 							href="https://www.themoviedb.org"

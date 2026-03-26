@@ -1,12 +1,13 @@
 // app/api/providers/route.ts
 import { NextRequest } from 'next/server';
+import { ContentType } from '@/types/movie';
 
 export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { content_id, content_type = 'movie', region } = body;
+    const { content_id, content_type = ContentType.MOVIE, region } = body;
 
     if (!content_id || !region) {
       return new Response(

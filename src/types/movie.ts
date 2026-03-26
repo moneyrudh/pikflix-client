@@ -138,8 +138,26 @@ export interface Show {
 	content_type: 'show';
 }
 
-export type ContentType = 'movie' | 'show';
-export type ContentTypeMode = 'movie' | 'show' | 'both';
+export const ContentType = {
+	MOVIE: 'movie',
+	SHOW: 'show',
+} as const;
+export type ContentType = (typeof ContentType)[keyof typeof ContentType];
+
+export const ContentTypeMode = {
+	MOVIE: 'movie',
+	SHOW: 'show',
+	BOTH: 'both',
+} as const;
+export type ContentTypeMode = (typeof ContentTypeMode)[keyof typeof ContentTypeMode];
+
+export const UIState = {
+	INITIAL: 'initial',
+	ANIMATING: 'animating',
+	SEARCHED: 'searched',
+} as const;
+export type UIState = (typeof UIState)[keyof typeof UIState];
+
 export type Content = Movie | Show;
 
 export interface MovieRecommendationResponse {
@@ -190,9 +208,9 @@ export interface ProviderResponse {
 
 // Helper to normalize content to card-friendly props
 export function getContentTitle(item: Content): string {
-	return item.content_type === 'show' ? item.name : item.title;
+	return item.content_type === ContentType.SHOW ? item.name : item.title;
 }
 
 export function getContentDate(item: Content): string | null {
-	return item.content_type === 'show' ? item.first_air_date : item.release_date;
+	return item.content_type === ContentType.SHOW ? item.first_air_date : item.release_date;
 }
