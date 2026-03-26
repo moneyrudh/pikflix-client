@@ -1,6 +1,6 @@
 // components/SearchResults.tsx
 import React from 'react';
-import { Content, getContentTitle, getContentDate } from '@/types/movie';
+import { Content, ContentType, getContentTitle, getContentDate } from '@/types/movie';
 import MovieCard from './MovieCard';
 import MovieCardSkeleton from './MovieCardSkeleton';
 
@@ -9,9 +9,10 @@ interface SearchResultsProps {
     isLoading: boolean;
     selectedItemId?: number | null;
     onItemClick: (itemId: number) => void;
+    showContentType?: boolean;
 }
 
-const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selectedItemId, onItemClick }) => {
+const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selectedItemId, onItemClick, showContentType = false }) => {
     const loadedCount = items?.length || 0;
     const placeholdersNeeded = isLoading ? Math.max(0, 9 - loadedCount) : 0;
 
@@ -39,6 +40,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
                     posterPath={item.poster_path}
                     releaseDate={getContentDate(item)}
                     voteAverage={item.vote_average}
+                    contentType={showContentType ? item.content_type : undefined}
                     isSelected={item.id === selectedItemId}
                     onClick={onItemClick}
                 />

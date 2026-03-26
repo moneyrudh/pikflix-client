@@ -566,6 +566,7 @@ function Home() {
 										isLoading={turn.loading}
 										selectedItemId={selectedItemId}
 										onItemClick={handleItemClick}
+										showContentType={contentTypeMode === ContentTypeMode.BOTH}
 									/>
 								</div>
 							));

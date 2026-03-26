@@ -2,14 +2,15 @@
 import React from 'react';
 import Image from 'next/image';
 import MoviePlaceholder from './MoviePlaceholder';
-import { Movie } from '@/types/movie';
+import { ContentType } from '@/types/movie';
 
 interface MovieCardProps {
   id: number;
   title: string;
   posterPath: string | null;
   releaseDate: string | null;
-  voteAverage?: number; // Added vote average prop
+  voteAverage?: number;
+  contentType?: ContentType;
   isSelected?: boolean;
   onClick: (movieId: number) => void;
 }
@@ -20,6 +21,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
   posterPath,
   releaseDate,
   voteAverage,
+  contentType,
   isSelected = false,
   onClick
 }) => {
@@ -74,11 +76,9 @@ const MovieCard: React.FC<MovieCardProps> = ({
               
               {/* Year and rating row with flex layout */}
               <div className="flex justify-between items-center">
-                {year && (
-                  <span className="text-gray-200 text-xs font-medium tracking-wider opacity-80">
-                    {year}
-                  </span>
-                )}
+                <span className="text-gray-200 text-xs font-medium tracking-wider opacity-80">
+                  {year}{contentType && <> · {contentType === ContentType.SHOW ? 'Show' : 'Movie'}</>}
+                </span>
                 
                 {rating && (
                   <span className="text-gray-200 text-xs font-medium bg-black/40 px-2 py-0.5 rounded-md flex items-center">
