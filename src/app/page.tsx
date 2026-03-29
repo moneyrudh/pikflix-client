@@ -27,6 +27,7 @@ function Home() {
 	const [error, setError] = useState<string | null>(null);
 	const [screenSize, setScreenSize] = useState('base');
 	const [contentTypeMode, setContentTypeMode] = useState<ContentTypeMode>(ContentTypeMode.MOVIE);
+	const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
 	const firstLoadRef = useRef(true);
 	const [searchBarScrolled, setSearchBarScrolled] = useState(false);
@@ -70,7 +71,7 @@ function Home() {
 		});
 	};
 
-	const contentTypeIcon = contentTypeMode === ContentTypeMode.MOVIE ? '🎬' : contentTypeMode === ContentTypeMode.SHOW ? '📺' : '🎬📺';
+	const contentTypeIcon = contentTypeMode === ContentTypeMode.MOVIE ? '🎬' : contentTypeMode === ContentTypeMode.SHOW ? '📺' : '🍿';
 	const contentTypeLabel = contentTypeMode === ContentTypeMode.MOVIE ? 'Movies' : contentTypeMode === ContentTypeMode.SHOW ? 'Shows' : 'Movies & Shows';
 
 	// Check for query in URL params on initial load
@@ -272,6 +273,7 @@ function Home() {
 				body: JSON.stringify({
 					query,
 					content_type: contentTypeMode,
+					web_search: webSearchEnabled,
 					history: history.length > 0 ? history : undefined,
 				}),
 			});
@@ -395,16 +397,6 @@ function Home() {
 
 	const searchForm = (
 		<form onSubmit={handleSubmit} className="relative w-full group">
-			{/* Content type toggle button */}
-			<button
-				type="button"
-				onClick={cycleContentType}
-				className="absolute top-4 left-4 flex items-center justify-center w-6 h-6 text-base leading-none z-10 hover:scale-110 transition-transform duration-200"
-				aria-label={`Switch content type. Current: ${contentTypeLabel}`}
-				title={contentTypeLabel}
-			>
-				<span className={contentTypeMode === ContentTypeMode.BOTH ? 'text-xs' : 'text-sm'}>{contentTypeIcon}</span>
-			</button>
 			<textarea
 				ref={searchInputRef}
 				rows={1}
@@ -425,7 +417,7 @@ function Home() {
 					}
 				}}
 				placeholder={getPlaceholderText()}
-				className="w-full pt-4 pb-4 pl-12 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted resize-none overflow-y-auto"
+				className="w-full pt-4 pb-4 pl-4 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted resize-none overflow-y-auto"
 				disabled={isSearching || uiState === UIState.ANIMATING}
 			/>
 			<button
@@ -454,9 +446,30 @@ function Home() {
 
 	// Content type label shown below search bar
 	const contentTypeLabelElement = (
-		<div className="text-center mt-1.5">
+		<div className="flex items-center justify-between mt-1.5 px-1">
+			<div className="flex items-center gap-2">
+				<button
+					type="button"
+					onClick={cycleContentType}
+					className="text-sm hover:scale-110 transition-transform duration-200"
+					aria-label={`Switch content type. Current: ${contentTypeLabel}`}
+					title={contentTypeLabel}
+				>
+					{contentTypeIcon}
+				</button>
+				<span className="text-theme-text-muted/30 text-xs">·</span>
+				<button
+					type="button"
+					onClick={() => setWebSearchEnabled(prev => !prev)}
+					className={`text-sm hover:scale-110 transition-all duration-200 ${webSearchEnabled ? 'opacity-100' : 'opacity-40'}`}
+					aria-label={`Toggle web search. Current: ${webSearchEnabled ? 'On' : 'Off'}`}
+					title={webSearchEnabled ? 'Web search enabled' : 'Web search disabled'}
+				>
+					🌐
+				</button>
+			</div>
 			<span className="text-xs text-theme-text-muted/60 font-medium tracking-wide">
-				{contentTypeLabel}
+				{contentTypeLabel}{webSearchEnabled ? ' · Web' : ''}
 			</span>
 		</div>
 	);

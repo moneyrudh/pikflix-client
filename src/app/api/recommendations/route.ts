@@ -7,7 +7,7 @@ export const runtime = 'edge';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { query, history, content_type = ContentTypeMode.MOVIE } = body;
+    const { query, history, content_type = ContentTypeMode.MOVIE, web_search = false } = body;
 
     if (!query) {
       return new Response(
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     // Call streaming FastAPI backend
     const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
 
-    const requestBody: Record<string, unknown> = { query, content_type };
+    const requestBody: Record<string, unknown> = { query, content_type, web_search };
     if (history && history.length > 0) {
       requestBody.history = history;
     }
