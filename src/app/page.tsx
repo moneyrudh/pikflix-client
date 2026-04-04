@@ -471,7 +471,7 @@ function Home() {
 				</button>
 			</div>
 			<span className="text-xs text-theme-text-muted/60 font-medium tracking-wide">
-				{contentTypeLabel}{webSearchEnabled ? ' · Web' : ''}
+				{contentTypeLabel}{webSearchEnabled ? ' · Web Search' : ''}
 			</span>
 		</div>
 	);
