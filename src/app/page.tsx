@@ -435,10 +435,10 @@ function Home() {
 			</button>
 
 			{/* "/" key hint */}
-			{(screenSize === 'lg' || screenSize === 'xl') && (
-				<div className="absolute right-16 top-4 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none group-focus-within:hidden">
-					<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
-					<span className="ml-1">to focus</span>
+			{(screenSize === 'lg' || screenSize === 'xl') && !searchQuery && (
+				<div className="absolute right-16 top-[18px] flex items-center text-xs text-theme-primary pointer-events-none group-focus-within:hidden">
+					<kbd className="px-1.5 py-0.5 bg-theme-primary border border-theme-primary rounded text-theme-background font-mono font-bold">/</kbd>
+					<span className="ml-1 font-bold">to focus</span>
 				</div>
 			)}
 		</form>
@@ -471,7 +471,7 @@ function Home() {
 				</button>
 			</div>
 			<span className="text-xs text-theme-text-muted/60 font-medium tracking-wide">
-				{contentTypeLabel}{webSearchEnabled ? ' · Web' : ''}
+				{contentTypeLabel}{webSearchEnabled ? ' · Web Search' : ''}
 			</span>
 		</div>
 	);
@@ -519,7 +519,7 @@ function Home() {
 					{/* Feature tags - only shown before search */}
 					{uiState === UIState.INITIAL && (
 						<div className="absolute short:top-[60%] tall:top-[60%] left-0 right-0 flex flex-wrap justify-center gap-2 animate-fade-in">
-							{["Natural Language", "AI Powered", "Personalized"].map((tag, i) => (
+							{["Conversational", "Movies & Shows", "Personalized"].map((tag, i) => (
 								<span
 									key={i}
 									className="px-3 py-1 text-xs font-medium rounded-full bg-theme-surface text-theme-text-muted border border-theme-text/5 hover:border-theme-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm"
