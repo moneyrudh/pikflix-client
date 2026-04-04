@@ -435,10 +435,10 @@ function Home() {
 			</button>
 
 			{/* "/" key hint */}
-			{(screenSize === 'lg' || screenSize === 'xl') && (
-				<div className="absolute right-16 top-4 flex items-center text-xs text-theme-text-muted opacity-60 pointer-events-none group-focus-within:hidden">
-					<kbd className="px-1.5 py-0.5 bg-theme-surface border border-theme-text/10 rounded text-theme-text-muted font-mono">/</kbd>
-					<span className="ml-1">to focus</span>
+			{(screenSize === 'lg' || screenSize === 'xl') && !searchQuery && (
+				<div className="absolute right-16 top-[18px] flex items-center text-xs text-theme-primary pointer-events-none group-focus-within:hidden">
+					<kbd className="px-1.5 py-0.5 bg-theme-primary border border-theme-primary rounded text-theme-background font-mono font-bold">/</kbd>
+					<span className="ml-1 font-bold">to focus</span>
 				</div>
 			)}
 		</form>
