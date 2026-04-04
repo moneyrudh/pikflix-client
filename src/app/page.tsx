@@ -519,7 +519,7 @@ function Home() {
 					{/* Feature tags - only shown before search */}
 					{uiState === UIState.INITIAL && (
 						<div className="absolute short:top-[60%] tall:top-[60%] left-0 right-0 flex flex-wrap justify-center gap-2 animate-fade-in">
-							{["Natural Language", "AI Powered", "Personalized"].map((tag, i) => (
+							{["Conversational", "Movies & Shows", "Personalized"].map((tag, i) => (
 								<span
 									key={i}
 									className="px-3 py-1 text-xs font-medium rounded-full bg-theme-surface text-theme-text-muted border border-theme-text/5 hover:border-theme-primary/20 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm"
