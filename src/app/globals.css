@@ -103,13 +103,28 @@ a {
     top: 45%;
   }
   to {
-    top: 5.5%;
+    top: 7.9%;
+  }
+}
+
+@keyframes moveToTopMobile {
+  from {
+    top: 45%;
+  }
+  to {
+    top: 7.9%;
   }
 }
 
 .animate-to-top {
-  animation: moveToTop 1000ms ease-in-out forwards;
+  animation: moveToTopMobile 1000ms ease-in-out forwards;
   will-change: transform, top;
+}
+
+@media (min-width: 768px) {
+  .animate-to-top {
+    animation: moveToTop 1000ms ease-in-out forwards;
+  }
 }
 
 @layer utilities {
