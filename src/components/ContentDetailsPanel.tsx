@@ -17,6 +17,7 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
   const abortControllerRef = useRef<AbortController | null>(null);
   // Trailer is a click-to-play facade: nothing loads from YouTube until the user asks for it
   const [isTrailerPlaying, setIsTrailerPlaying] = useState<boolean>(false);
+  const [isTrailerLoaded, setIsTrailerLoaded] = useState<boolean>(false);
 
   const region = "US";
 
@@ -80,6 +81,20 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
     setIsTrailerPlaying(false);
   }, [item?.id, isOpen]);
 
+  // Esc closes the trailer before the panel. Capture phase runs ahead of page.tsx's
+  // window listener, so stopping propagation keeps the panel open.
+  useEffect(() => {
+    if (!isTrailerPlaying) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setIsTrailerPlaying(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [isTrailerPlaying]);
+
   if (!item) return null;
 
   const isShow = item.content_type === ContentType.SHOW;
@@ -111,6 +126,12 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
 
   const hasBackdrop = item.backdrop_path !== null && item.backdrop_path !== '';
 
+  // While the trailer plays, the close buttons fade out with YouTube's controls when the
+  // pointer leaves the video. Only on devices that can hover, so touch screens keep them visible.
+  const trailerOverlayVisibility = isTrailerPlaying
+    ? '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/hero:opacity-100 focus-visible:opacity-100'
+    : '';
+
   // Show-specific helpers
   const show = isShow ? (item as Show) : null;
   const movie = !isShow ? (item as Movie) : null;
@@ -121,26 +142,26 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 backdrop-blur-sm transition-all duration-300"
-        aria-label="Close details"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-
       {/* Hero section with backdrop */}
       <div className="relative w-full">
-        <div className="relative w-full aspect-video">
+        <div className="relative w-full aspect-video group/hero">
+          {/* Close button. Lives inside the hero so hovering it counts as hovering the video */}
+          <button
+            onClick={onClose}
+            className={`absolute top-4 right-4 z-10 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 backdrop-blur-sm transition-all duration-300 ${trailerOverlayVisibility}`}
+            aria-label="Close details"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
           {hasBackdrop ? (
             <Image
               src={`https://image.tmdb.org/t/p/w1280${item.backdrop_path}`}
@@ -158,11 +179,14 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
 
           {item.trailer && !isTrailerPlaying && (
             <button
-              onClick={() => setIsTrailerPlaying(true)}
+              onClick={() => {
+                setIsTrailerLoaded(false);
+                setIsTrailerPlaying(true);
+              }}
               className="absolute inset-0 flex items-center justify-center group/play"
               aria-label={`Play trailer for ${title}`}
             >
-              <span className="flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-sm font-medium shadow-lg transition-all duration-300 group-hover/play:bg-theme-primary group-hover/play:scale-105">
+              <span className="flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-black/50 backdrop-blur-sm text-theme-primary text-sm font-medium shadow-lg transition-all duration-300 group-hover/play:bg-theme-primary group-hover/play:text-theme-background group-hover/play:scale-105">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                   <path d="M6.3 2.84A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.27l9.344-5.891a1.5 1.5 0 000-2.538L6.3 2.841z" />
                 </svg>
@@ -171,7 +195,10 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
             </button>
           )}
 
-          <div className="absolute bottom-0 left-8 transform translate-y-1/2 w-28 h-40 md:w-32 md:h-48 shadow-xl rounded-lg overflow-hidden border-2 border-theme-surface">
+          {/* Half-overlaps the hero normally; slides fully below it while the trailer covers the hero */}
+          <div className={`absolute bottom-0 left-8 z-[6] transform transition-transform duration-500 ease-out w-28 h-40 md:w-32 md:h-48 shadow-xl rounded-lg overflow-hidden border-2 border-theme-surface ${
+            isTrailerPlaying ? 'translate-y-[calc(100%+1rem)]' : 'translate-y-1/2'
+          }`}>
             {item.poster_path ? (
               <Image
                 src={`https://image.tmdb.org/t/p/w500${item.poster_path}`}
@@ -188,18 +215,39 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
           </div>
 
           {item.trailer && isTrailerPlaying && (
-            <iframe
-              key={item.trailer.key}
-              src={`https://www.youtube-nocookie.com/embed/${item.trailer.key}?autoplay=1&rel=0`}
-              title={item.trailer.name ?? `${title} trailer`}
-              className="absolute inset-0 w-full h-full z-[5] bg-black"
-              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-              allowFullScreen
-            />
+            <div className="absolute inset-0 z-[5] bg-black">
+              {!isTrailerLoaded && (
+                <div className="absolute inset-0 flex items-center justify-center text-white/70">
+                  <svg className="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24" aria-label="Loading trailer">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                </div>
+              )}
+              <iframe
+                key={item.trailer.key}
+                src={`https://www.youtube-nocookie.com/embed/${item.trailer.key}?autoplay=1&rel=0`}
+                title={item.trailer.name ?? `${title} trailer`}
+                onLoad={() => setIsTrailerLoaded(true)}
+                className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${isTrailerLoaded ? 'opacity-100' : 'opacity-0'}`}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+              />
+              <button
+                onClick={() => setIsTrailerPlaying(false)}
+                className={`absolute top-4 left-4 z-10 flex items-center gap-1.5 pl-2.5 pr-3.5 py-2 rounded-full bg-black/50 text-white text-sm font-medium backdrop-blur-sm hover:bg-black/70 transition-all duration-300 ${trailerOverlayVisibility}`}
+                aria-label="Close trailer"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Close trailer
+              </button>
+            </div>
           )}
         </div>
 
-        <div className="px-8 pt-24 pb-8">
+        <div className={`px-8 pb-8 transition-[padding] duration-500 ease-out ${isTrailerPlaying ? 'pt-48 md:pt-52' : 'pt-24'}`}>
           {/* Title and year */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-theme-text">{title}</h1>
