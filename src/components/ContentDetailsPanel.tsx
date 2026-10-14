@@ -15,6 +15,8 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
   const [isLoadingProviders, setIsLoadingProviders] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Trailer is a click-to-play facade: nothing loads from YouTube until the user asks for it
+  const [isTrailerPlaying, setIsTrailerPlaying] = useState<boolean>(false);
 
   const region = "US";
 
@@ -72,6 +74,11 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
       }
     };
   }, [item, isOpen, fetchProviders]);
+
+  // Stop the trailer when switching items or closing the panel
+  useEffect(() => {
+    setIsTrailerPlaying(false);
+  }, [item?.id, isOpen]);
 
   if (!item) return null;
 
@@ -149,6 +156,21 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
 
           <div className="absolute inset-0 bg-gradient-to-t from-theme-surface via-theme-surface/80 to-transparent"></div>
 
+          {item.trailer && !isTrailerPlaying && (
+            <button
+              onClick={() => setIsTrailerPlaying(true)}
+              className="absolute inset-0 flex items-center justify-center group/play"
+              aria-label={`Play trailer for ${title}`}
+            >
+              <span className="flex items-center gap-2 pl-4 pr-5 py-2.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-sm font-medium shadow-lg transition-all duration-300 group-hover/play:bg-theme-primary group-hover/play:scale-105">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M6.3 2.84A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.27l9.344-5.891a1.5 1.5 0 000-2.538L6.3 2.841z" />
+                </svg>
+                Play trailer
+              </span>
+            </button>
+          )}
+
           <div className="absolute bottom-0 left-8 transform translate-y-1/2 w-28 h-40 md:w-32 md:h-48 shadow-xl rounded-lg overflow-hidden border-2 border-theme-surface">
             {item.poster_path ? (
               <Image
@@ -164,6 +186,17 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
               </div>
             )}
           </div>
+
+          {item.trailer && isTrailerPlaying && (
+            <iframe
+              key={item.trailer.key}
+              src={`https://www.youtube-nocookie.com/embed/${item.trailer.key}?autoplay=1&rel=0`}
+              title={item.trailer.name ?? `${title} trailer`}
+              className="absolute inset-0 w-full h-full z-[5] bg-black"
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+            />
+          )}
         </div>
 
         <div className="px-8 pt-24 pb-8">
