@@ -44,6 +44,13 @@ export interface Creator {
 	profile_path: string | null;
 }
 
+export interface Trailer {
+	key: string; // YouTube video id
+	name: string | null;
+	official: boolean;
+	language: string | null;
+}
+
 export interface Movie {
 	id: number;
 	imdb_id: string | null;
@@ -70,6 +77,7 @@ export interface Movie {
 	production_companies: ProductionCompany[];
 	production_countries: ProductionCountry[];
 	spoken_languages: SpokenLanguage[];
+	trailer: Trailer | null;
 	reason?: string;
 	content_type: 'movie';
 }
@@ -134,6 +142,7 @@ export interface Show {
 	next_episode_to_air: EpisodeInfo | null;
 	in_production: boolean | null;
 	type: string | null;
+	trailer: Trailer | null;
 	reason?: string;
 	content_type: 'show';
 }

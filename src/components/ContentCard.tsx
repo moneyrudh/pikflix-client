@@ -11,6 +11,7 @@ interface ContentCardProps {
   releaseDate: string | null;
   voteAverage?: number;
   contentType?: ContentType;
+  hasTrailer?: boolean;
   isSelected?: boolean;
   onClick: (movieId: number) => void;
 }
@@ -22,6 +23,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
   releaseDate,
   voteAverage,
   contentType,
+  hasTrailer = false,
   isSelected = false,
   onClick
 }) => {
@@ -58,6 +60,16 @@ const ContentCard: React.FC<ContentCardProps> = ({
       }}
     >
       <div className="relative aspect-[2/3] w-full">
+        {/* Trailer available - plays from the details panel */}
+        {hasTrailer && (
+          <span className="absolute top-3 left-3 z-10 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium tracking-wider uppercase">
+            <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M6.3 2.84A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.27l9.344-5.891a1.5 1.5 0 000-2.538L6.3 2.841z" />
+            </svg>
+            Trailer
+          </span>
+        )}
+
         {hasImage ? (
           <>
             <Image

@@ -406,7 +406,10 @@ function Home() {
 					requestAnimationFrame(() => {
 						const el = e.target;
 						el.style.height = 'auto';
-						el.style.height = Math.min(el.scrollHeight, 104) + 'px';
+						// height is border-box but scrollHeight excludes borders: add them back so the
+						// textarea keeps its natural height instead of shrinking 2px on the first keystroke
+						const border = el.offsetHeight - el.clientHeight;
+						el.style.height = Math.min(el.scrollHeight, 104) + border + 'px';
 						el.scrollTop = el.scrollHeight;
 					});
 				}}
@@ -417,7 +420,7 @@ function Home() {
 					}
 				}}
 				placeholder={getPlaceholderText()}
-				className="w-full pt-4 pb-4 pl-4 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 focus:border-theme-primary/30 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-none text-theme-text transition-all duration-300 placeholder-theme-text-muted resize-none overflow-y-auto"
+				className="w-full pt-4 pb-4 pl-4 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 shadow-[0_2px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_15px_rgba(0,0,0,0.2)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-transparent text-theme-text transition-all duration-300 placeholder-theme-text-muted resize-none overflow-y-auto"
 				disabled={isSearching || uiState === UIState.ANIMATING}
 			/>
 			<button
