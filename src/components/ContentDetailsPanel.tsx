@@ -256,6 +256,12 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
                 {new Date(dateStr).getFullYear()}
               </p>
             )}
+            {item.reason && (
+              <p className="mt-3 text-theme-text leading-relaxed">
+                <span className="text-theme-primary font-semibold">Why this pick: </span>
+                {item.reason}
+              </p>
+            )}
           </div>
 
           {/* Key stats row */}

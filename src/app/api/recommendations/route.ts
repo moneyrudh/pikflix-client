@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
               try {
                 const event = JSON.parse(buffer.trim());
                 if (event.type === 'content' || event.type === 'movie') {
-                  const item = { ...event.data, content_type: event.content_type || ContentType.MOVIE };
+                  const item = { ...event.data, content_type: event.content_type || ContentType.MOVIE, reason: event.reason ?? undefined };
                   recommendations.push(item);
                 }
               } catch (e) {
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
                   }) + '\n'));
                 }
                 else if (event.type === 'content' || event.type === 'movie') {
-                  const item = { ...event.data, content_type: event.content_type || ContentType.MOVIE };
+                  const item = { ...event.data, content_type: event.content_type || ContentType.MOVIE, reason: event.reason ?? undefined };
                   recommendations.push(item);
                   await writer.write(encoder.encode(JSON.stringify({
                     recommendations,

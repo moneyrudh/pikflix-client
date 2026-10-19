@@ -66,6 +66,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
                         releaseDate={getContentDate(item)}
                         voteAverage={item.vote_average}
                         hasTrailer={!!item.trailer}
+                        reason={item.reason}
                         contentType={showContentType ? item.content_type : undefined}
                         isSelected={item.id === selectedItemId}
                         onClick={onItemClick}
