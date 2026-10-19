@@ -12,6 +12,7 @@ interface ContentCardProps {
   voteAverage?: number;
   contentType?: ContentType;
   hasTrailer?: boolean;
+  reason?: string;
   isSelected?: boolean;
   onClick: (movieId: number) => void;
 }
@@ -24,6 +25,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
   voteAverage,
   contentType,
   hasTrailer = false,
+  reason,
   isSelected = false,
   onClick
 }) => {
@@ -101,6 +103,17 @@ const ContentCard: React.FC<ContentCardProps> = ({
                   </span>
                 )}
               </div>
+
+              {/* Why Claude picked it: expands on hover (grid rows animate 0fr -> 1fr) */}
+              {reason && (
+                <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-300 ease-out">
+                  <div className="overflow-hidden">
+                    <p className="pt-2 text-gray-100 text-xs leading-snug line-clamp-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                      {reason}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         ) : (
