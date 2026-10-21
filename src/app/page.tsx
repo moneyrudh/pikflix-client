@@ -7,7 +7,7 @@ import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
 import ContentDetailsPanel from '@/components/ContentDetailsPanel';
 import Spinner from '@/components/Spinner';
-import { Content, ContentType, ContentTypeMode, UIState, ConversationTurn, RecommendationSummary, getContentTitle, getContentDate } from '@/types/content';
+import { Content, ContentType, ContentTypeMode, MediaType, MODE_MEDIA_TYPES, StreamEvent, UIState, ConversationTurn, RecommendationSummary, getContentTitle, getContentDate } from '@/types/content';
 
 export default function Page() {
 	return (
@@ -213,7 +213,8 @@ function Home() {
 	};
 
 	const isNewItem = (item: Content, existing: Content[]) => {
-		return !existing.some(e => e && e.id === item.id);
+		// A movie and a show can share a TMDB id
+		return !existing.some(e => e && e.id === item.id && e.content_type === item.content_type);
 	};
 
 	const handleItemClick = (itemId: number) => {
@@ -272,7 +273,7 @@ function Home() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					query,
-					content_type: contentTypeMode,
+					media_types: MODE_MEDIA_TYPES[contentTypeMode],
 					web_search: webSearchEnabled,
 					history: history.length > 0 ? history : undefined,
 				}),
@@ -288,6 +289,35 @@ function Home() {
 
 			let buffer = '';
 			let streamedItems: Content[] = [];
+			let finished = false; // saw `done` or `error`; anything else means the stream was cut off
+			let streamError: string | null = null;
+
+			const handleEvent = (event: StreamEvent) => {
+				if (event.type === 'item') {
+					// Only watch media render today; books/papers get their own cards later
+					if (event.media_type !== MediaType.MOVIE && event.media_type !== MediaType.SHOW) return;
+					const item = { ...event.data, content_type: event.media_type, reason: event.reason ?? undefined } as Content;
+					if (isNewItem(item, streamedItems)) {
+						streamedItems = [...streamedItems, item];
+						setCurrentItems(streamedItems);
+					}
+				} else if (event.type === 'done') {
+					finished = true;
+					if (event.count === 0) streamError = "Couldn't find anything for that. Try describing it differently.";
+				} else if (event.type === 'error') {
+					finished = true;
+					streamError = event.message;
+				}
+			};
+
+			const handleLine = (line: string) => {
+				if (!line.trim()) return;
+				try {
+					handleEvent(JSON.parse(line) as StreamEvent);
+				} catch (e) {
+					console.error('Error parsing stream line:', e);
+				}
+			};
 
 			while (true) {
 				const { value, done } = await reader.read();
@@ -296,32 +326,16 @@ function Home() {
 				buffer += decoder.decode(value, { stream: true });
 				const lines = buffer.split('\n');
 				buffer = lines.pop() || '';
-
-				for (const line of lines) {
-					if (line.trim()) {
-						try {
-							const data = JSON.parse(line.trim());
-							data.recommendations.forEach((item: Content) => {
-								if (isNewItem(item, streamedItems)) {
-									streamedItems = [...streamedItems, item];
-								}
-							});
-							setCurrentItems([...streamedItems]);
-						} catch (e) {
-							console.error('Error parsing JSON:', e);
-						}
-					}
-				}
+				lines.forEach(handleLine);
 			}
+			handleLine(buffer);
 
-			if (buffer.trim()) {
-				try {
-					const data = JSON.parse(buffer.trim());
-					streamedItems = data.recommendations;
-					setCurrentItems([...streamedItems]);
-				} catch (e) {
-					console.error('Error parsing final JSON:', e);
-				}
+			if (!finished) {
+				streamError = 'The connection dropped before all results arrived. Please try again.';
+			}
+			if (streamError) {
+				// Results that already arrived stay on screen and in history
+				setError(streamError);
 			}
 
 			// Commit to session history
@@ -546,13 +560,6 @@ function Home() {
 						{contentTypeLabelElement}
 					</div>
 
-					{/* Error message */}
-					{error && (
-						<div className="absolute top-[15%] w-full mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 animate-fade-in">
-							<p>{error}</p>
-						</div>
-					)}
-
 					{/* Results section */}
 					<div className={getResultsStyle()}>
 						{(() => {
@@ -589,6 +596,15 @@ function Home() {
 								</div>
 							));
 						})()}
+
+						{/* Error message: inline under the latest results, so it never covers the search bar */}
+						{error && (
+							<div className={`w-full p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 animate-fade-in ${
+								sessionHistory.length > 0 || (currentItems && currentItems.length > 0) ? 'mt-4' : 'mt-12'
+							}`}>
+								<p>{error}</p>
+							</div>
+						)}
 
 						{uiState === UIState.SEARCHED && (sessionHistory.length > 0 || (currentItems && currentItems.length > 0)) && (
 						<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
