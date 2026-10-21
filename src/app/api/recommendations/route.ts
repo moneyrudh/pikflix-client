@@ -1,13 +1,14 @@
 // app/api/recommendations/route.ts
 import { NextRequest } from 'next/server';
-import { ContentType, ContentTypeMode } from '@/types/content';
+import { MediaType } from '@/types/content';
 
 export const runtime = 'edge';
 
+// Proxies the backend's NDJSON stream unchanged; the page parses the events (see StreamEvent).
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { query, history, content_type = ContentTypeMode.MOVIE, web_search = false } = body;
+    const { query, history, media_types = [MediaType.MOVIE], web_search = false } = body;
 
     if (!query) {
       return new Response(
@@ -16,10 +17,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Call streaming FastAPI backend
     const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
 
-    const requestBody: Record<string, unknown> = { query, content_type, web_search };
+    const requestBody: Record<string, unknown> = { query, media_types, web_search };
     if (history && history.length > 0) {
       requestBody.history = history;
     }
@@ -30,94 +30,20 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      signal: req.signal, // stop the backend work when the user navigates away
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
+      // A string detail is meant for users; FastAPI validation errors (a list) are internal
+      const detail = typeof errorData.detail === 'string' ? errorData.detail : null;
       return new Response(
-        JSON.stringify({ error: errorData.detail || 'Failed to fetch recommendations' }),
+        JSON.stringify({ error: detail || 'Failed to fetch recommendations' }),
         { status: response.status, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Set up a transform stream to process the ndjson from backend
-    const { readable, writable } = new TransformStream();
-
-    // Process the stream
-    const processStream = async () => {
-      const reader = response.body?.getReader();
-      const writer = writable.getWriter();
-      const decoder = new TextDecoder();
-      const encoder = new TextEncoder();
-
-      let buffer = '';
-      const recommendations: Record<string, unknown>[] = [];
-
-      try {
-        while (true) {
-          const { value, done } = await reader!.read();
-
-          if (done) {
-            if (buffer.trim()) {
-              try {
-                const event = JSON.parse(buffer.trim());
-                if (event.type === 'content' || event.type === 'movie') {
-                  const item = { ...event.data, content_type: event.content_type || ContentType.MOVIE, reason: event.reason ?? undefined };
-                  recommendations.push(item);
-                }
-              } catch (e) {
-                console.error('Error parsing JSON:', buffer);
-              }
-            }
-
-            await writer.write(encoder.encode(JSON.stringify({
-              recommendations,
-              query
-            })));
-
-            await writer.close();
-            break;
-          }
-
-          buffer += decoder.decode(value, { stream: true });
-
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || '';
-
-          for (const line of lines) {
-            if (line.trim()) {
-              try {
-                const event = JSON.parse(line.trim());
-
-                if (event.type === 'init') {
-                  await writer.write(encoder.encode(JSON.stringify({
-                    recommendations: [],
-                    query: event.query
-                  }) + '\n'));
-                }
-                else if (event.type === 'content' || event.type === 'movie') {
-                  const item = { ...event.data, content_type: event.content_type || ContentType.MOVIE, reason: event.reason ?? undefined };
-                  recommendations.push(item);
-                  await writer.write(encoder.encode(JSON.stringify({
-                    recommendations,
-                    query
-                  }) + '\n'));
-                }
-              } catch (e) {
-                console.error('Error parsing JSON:', line);
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Stream processing error:', e);
-        writer.abort(e);
-      }
-    };
-
-    processStream();
-
-    return new Response(readable, {
+    return new Response(response.body, {
       headers: { 'Content-Type': 'application/x-ndjson' }
     });
   } catch (error) {

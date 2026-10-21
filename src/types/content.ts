@@ -160,6 +160,21 @@ export const ContentTypeMode = {
 } as const;
 export type ContentTypeMode = (typeof ContentTypeMode)[keyof typeof ContentTypeMode];
 
+export const MediaType = {
+	MOVIE: 'movie',
+	SHOW: 'show',
+	BOOK: 'book',
+	PAPER: 'paper',
+} as const;
+export type MediaType = (typeof MediaType)[keyof typeof MediaType];
+
+// What each toggle mode asks the backend for (`media_types` in the request)
+export const MODE_MEDIA_TYPES: Record<ContentTypeMode, MediaType[]> = {
+	[ContentTypeMode.MOVIE]: [MediaType.MOVIE],
+	[ContentTypeMode.SHOW]: [MediaType.SHOW],
+	[ContentTypeMode.BOTH]: [MediaType.MOVIE, MediaType.SHOW],
+};
+
 export const UIState = {
 	INITIAL: 'initial',
 	ANIMATING: 'animating',
@@ -169,10 +184,14 @@ export type UIState = (typeof UIState)[keyof typeof UIState];
 
 export type Content = Movie | Show;
 
-export interface RecommendationResponse {
-	recommendations: Content[];
-	query: string;
-}
+// Recommendation stream (NDJSON from /api/recommendations), one event per line.
+// The backend also sends a legacy `content` event per result; it duplicates `item` and is ignored.
+export type StreamEvent =
+	| { type: 'init'; query: string; media_types: MediaType[] }
+	| { type: 'item'; media_type: MediaType; reason: string | null; data: Omit<Movie, 'content_type'> | Omit<Show, 'content_type'> }
+	| { type: 'content' }
+	| { type: 'done'; count: number; dropped: number }
+	| { type: 'error'; message: string };
 
 export interface RecommendationSummary {
 	title: string;
@@ -216,6 +235,11 @@ export interface ProviderResponse {
 }
 
 // Helper to normalize content to card-friendly props
+// Identifies an item across types: a movie and a show can share a TMDB id. Also the `?content=` URL value.
+export function getContentKey(item: Content): string {
+	return `${item.content_type}:${item.id}`;
+}
+
 export function getContentTitle(item: Content): string {
 	return item.content_type === ContentType.SHOW ? item.name : item.title;
 }

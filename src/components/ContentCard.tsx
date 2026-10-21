@@ -14,7 +14,7 @@ interface ContentCardProps {
   hasTrailer?: boolean;
   reason?: string;
   isSelected?: boolean;
-  onClick: (movieId: number) => void;
+  onClick: () => void;
 }
 
 const ContentCard: React.FC<ContentCardProps> = ({
@@ -40,7 +40,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
   const imageUrl = hasImage ? `https://image.tmdb.org/t/p/w500${posterPath}` : '';
   
   const handleClick = () => {
-    onClick(id);
+    onClick();
   };
   
   return (

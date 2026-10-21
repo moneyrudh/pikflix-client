@@ -7,7 +7,7 @@ import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
 import ContentDetailsPanel from '@/components/ContentDetailsPanel';
 import Spinner from '@/components/Spinner';
-import { Content, ContentType, ContentTypeMode, UIState, ConversationTurn, RecommendationSummary, getContentTitle, getContentDate } from '@/types/content';
+import { Content, ContentType, ContentTypeMode, MediaType, MODE_MEDIA_TYPES, StreamEvent, UIState, ConversationTurn, RecommendationSummary, getContentKey, getContentTitle, getContentDate } from '@/types/content';
 
 export default function Page() {
 	return (
@@ -24,7 +24,9 @@ function Home() {
 	const [uiState, setUiState] = useState<UIState>(UIState.INITIAL);
 	const [sessionHistory, setSessionHistory] = useState<ConversationTurn[]>([]);
 	const [currentItems, setCurrentItems] = useState<Content[] | null>(null);
-	const [error, setError] = useState<string | null>(null);
+	// `query` is set when the failed search produced no cards, so its label shows above the message
+	const [error, setError] = useState<{ message: string; query: string | null } | null>(null);
+	const errorRef = useRef<HTMLDivElement>(null);
 	const [screenSize, setScreenSize] = useState('base');
 	const [contentTypeMode, setContentTypeMode] = useState<ContentTypeMode>(ContentTypeMode.MOVIE);
 	const [webSearchEnabled, setWebSearchEnabled] = useState(false);
@@ -51,7 +53,7 @@ function Home() {
 	};
 
 	// State for details panel
-	const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+	const [selectedItemKey, setSelectedItemKey] = useState<string | null>(null); // getContentKey()
 	const [isDetailsPanelOpen, setIsDetailsPanelOpen] = useState(false);
 	const [selectedItem, setSelectedItem] = useState<Content | null>(null);
 
@@ -108,30 +110,32 @@ function Home() {
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [isDetailsPanelOpen]);
 
-	// Find selected item when ID changes
+	// Find selected item when its key changes
 	useEffect(() => {
-		if (selectedItemId) {
+		if (selectedItemKey) {
 			const allItems = [
 				...sessionHistory.flatMap(turn => turn.items),
 				...(currentItems || []),
 			];
-			const item = allItems.find(m => m.id === selectedItemId) || null;
+			const item = allItems.find(m => getContentKey(m) === selectedItemKey) || null;
 			setSelectedItem(item);
 		} else {
 			setSelectedItem(null);
 		}
-	}, [selectedItemId, sessionHistory, currentItems]);
+	}, [selectedItemKey, sessionHistory, currentItems]);
 
-	// Check for item ID in URL on load
+	// An error can land below a full grid of cards; bring it into view
+	useEffect(() => {
+		if (error) errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+	}, [error]);
+
+	// Check for an item key (e.g. "movie:603") in the URL on load
 	useEffect(() => {
 		if (firstLoadRef.current) {
-			const contentIdParam = searchParams.get('content');
-			if (contentIdParam && (sessionHistory.length > 0 || currentItems?.length)) {
-				const contentId = parseInt(contentIdParam, 10);
-				if (!isNaN(contentId)) {
-					setSelectedItemId(contentId);
-					setIsDetailsPanelOpen(true);
-				}
+			const contentKeyParam = searchParams.get('content');
+			if (contentKeyParam && (sessionHistory.length > 0 || currentItems?.length)) {
+				setSelectedItemKey(contentKeyParam);
+				setIsDetailsPanelOpen(true);
 			}
 			firstLoadRef.current = false;
 		}
@@ -213,11 +217,12 @@ function Home() {
 	};
 
 	const isNewItem = (item: Content, existing: Content[]) => {
-		return !existing.some(e => e && e.id === item.id);
+		const key = getContentKey(item);
+		return !existing.some(e => e && getContentKey(e) === key);
 	};
 
-	const handleItemClick = (itemId: number) => {
-		setSelectedItemId(itemId);
+	const handleItemClick = (itemKey: string) => {
+		setSelectedItemKey(itemKey);
 		setIsDetailsPanelOpen(true);
 
 		if (window.innerWidth < 768) {
@@ -227,7 +232,7 @@ function Home() {
 
 	const closeDetailsPanel = () => {
 		setIsDetailsPanelOpen(false);
-		setSelectedItemId(null);
+		setSelectedItemKey(null);
 
 		const currentQuery = searchParams.get('query');
 		if (currentQuery) {
@@ -252,7 +257,7 @@ function Home() {
 			setError(null);
 			setCurrentItems([]);
 			setIsDetailsPanelOpen(false);
-			setSelectedItemId(null);
+			setSelectedItemKey(null);
 
 			if (sessionHistory.length > 0) {
 				setTimeout(() => {
@@ -272,7 +277,7 @@ function Home() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					query,
-					content_type: contentTypeMode,
+					media_types: MODE_MEDIA_TYPES[contentTypeMode],
 					web_search: webSearchEnabled,
 					history: history.length > 0 ? history : undefined,
 				}),
@@ -288,40 +293,59 @@ function Home() {
 
 			let buffer = '';
 			let streamedItems: Content[] = [];
+			let finished = false; // saw `done` or `error`; anything else means the stream was cut off
+			let streamError: string | null = null;
 
-			while (true) {
-				const { value, done } = await reader.read();
-				if (done) break;
-
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split('\n');
-				buffer = lines.pop() || '';
-
-				for (const line of lines) {
-					if (line.trim()) {
-						try {
-							const data = JSON.parse(line.trim());
-							data.recommendations.forEach((item: Content) => {
-								if (isNewItem(item, streamedItems)) {
-									streamedItems = [...streamedItems, item];
-								}
-							});
-							setCurrentItems([...streamedItems]);
-						} catch (e) {
-							console.error('Error parsing JSON:', e);
-						}
+			const handleEvent = (event: StreamEvent) => {
+				if (event.type === 'item') {
+					// Only watch media render today; books/papers get their own cards later
+					if (event.media_type !== MediaType.MOVIE && event.media_type !== MediaType.SHOW) return;
+					const item = { ...event.data, content_type: event.media_type, reason: event.reason ?? undefined } as Content;
+					if (isNewItem(item, streamedItems)) {
+						streamedItems = [...streamedItems, item];
+						setCurrentItems(streamedItems);
 					}
+				} else if (event.type === 'done') {
+					finished = true;
+					if (event.count === 0) streamError = "Couldn't find anything for that. Try describing it differently.";
+				} else if (event.type === 'error') {
+					finished = true;
+					streamError = event.message;
 				}
+			};
+
+			const handleLine = (line: string) => {
+				if (!line.trim()) return;
+				try {
+					handleEvent(JSON.parse(line) as StreamEvent);
+				} catch (e) {
+					console.error('Error parsing stream line:', e);
+				}
+			};
+
+			try {
+				while (true) {
+					const { value, done } = await reader.read();
+					if (done) break;
+
+					buffer += decoder.decode(value, { stream: true });
+					const lines = buffer.split('\n');
+					buffer = lines.pop() || '';
+					lines.forEach(handleLine);
+				}
+				handleLine(buffer);
+			} catch (e) {
+				// A backend crash mid-stream surfaces as a read error, not a clean end. Leaving
+				// `finished` false reports it as a dropped connection and keeps the cards received.
+				console.error('Stream read error:', e);
 			}
 
-			if (buffer.trim()) {
-				try {
-					const data = JSON.parse(buffer.trim());
-					streamedItems = data.recommendations;
-					setCurrentItems([...streamedItems]);
-				} catch (e) {
-					console.error('Error parsing final JSON:', e);
-				}
+			if (!finished) {
+				streamError = 'The connection dropped before all results arrived. Please try again.';
+			}
+			if (streamError) {
+				// Results that already arrived stay on screen and in history
+				setError({ message: streamError, query: streamedItems.length === 0 ? query : null });
 			}
 
 			// Commit to session history
@@ -343,7 +367,7 @@ function Home() {
 			}
 		} catch (err) {
 			console.error('Error:', err);
-			setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+			setError({ message: err instanceof Error ? err.message : 'An unexpected error occurred', query });
 			setCurrentItems(null);
 		} finally {
 			setIsSearching(false);
@@ -546,13 +570,6 @@ function Home() {
 						{contentTypeLabelElement}
 					</div>
 
-					{/* Error message */}
-					{error && (
-						<div className="absolute top-[15%] w-full mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 animate-fade-in">
-							<p>{error}</p>
-						</div>
-					)}
-
 					{/* Results section */}
 					<div className={getResultsStyle()}>
 						{(() => {
@@ -582,13 +599,27 @@ function Home() {
 									<SearchResults
 										items={turn.items}
 										isLoading={turn.loading}
-										selectedItemId={selectedItemId}
+										selectedItemKey={selectedItemKey}
 										onItemClick={handleItemClick}
 										showContentType={contentTypeMode === ContentTypeMode.BOTH}
 									/>
 								</div>
 							));
 						})()}
+
+						{/* Error message: inline under the latest results, so it never covers the search bar */}
+						{error && (
+							<div ref={errorRef} className={error.query ? '' : 'mt-4'}>
+								{error.query && (
+									<div className="flex items-center gap-2 pt-8 pb-2 mt-4">
+										<span className="text-sm text-theme-text-muted italic">&ldquo;{error.query}&rdquo;</span>
+									</div>
+								)}
+								<div role="alert" className="w-full mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-500 animate-fade-in">
+									<p>{error.message}</p>
+								</div>
+							</div>
+						)}
 
 						{uiState === UIState.SEARCHED && (sessionHistory.length > 0 || (currentItems && currentItems.length > 0)) && (
 						<div className="w-full text-center mt-6 mb-12 text-theme-text-muted text-xs">
