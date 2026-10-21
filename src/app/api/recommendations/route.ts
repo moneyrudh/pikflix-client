@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      // FastAPI validation errors come back as a list of {msg, ...}
-      const detail = Array.isArray(errorData.detail) ? errorData.detail[0]?.msg : errorData.detail;
+      // A string detail is meant for users; FastAPI validation errors (a list) are internal
+      const detail = typeof errorData.detail === 'string' ? errorData.detail : null;
       return new Response(
         JSON.stringify({ error: detail || 'Failed to fetch recommendations' }),
         { status: response.status, headers: { 'Content-Type': 'application/json' } }

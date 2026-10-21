@@ -235,6 +235,11 @@ export interface ProviderResponse {
 }
 
 // Helper to normalize content to card-friendly props
+// Identifies an item across types: a movie and a show can share a TMDB id. Also the `?content=` URL value.
+export function getContentKey(item: Content): string {
+	return `${item.content_type}:${item.id}`;
+}
+
 export function getContentTitle(item: Content): string {
 	return item.content_type === ContentType.SHOW ? item.name : item.title;
 }

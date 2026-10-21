@@ -1,14 +1,14 @@
 // components/SearchResults.tsx
 import React, { useRef } from 'react';
-import { Content, ContentType, getContentTitle, getContentDate } from '@/types/content';
+import { Content, ContentType, getContentKey, getContentTitle, getContentDate } from '@/types/content';
 import ContentCard from './ContentCard';
 import ContentCardSkeleton from './ContentCardSkeleton';
 
 interface SearchResultsProps {
     items: Content[] | null;
     isLoading: boolean;
-    selectedItemId?: number | null;
-    onItemClick: (itemId: number) => void;
+    selectedItemKey?: string | null;
+    onItemClick: (itemKey: string) => void;
     showContentType?: boolean;
 }
 
@@ -16,20 +16,20 @@ interface SearchResultsProps {
 // the same frame; spacing them out makes them flow in instead of popping in together.
 const CARD_STAGGER_MS = 90;
 
-const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selectedItemId, onItemClick, showContentType = false }) => {
+const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selectedItemKey, onItemClick, showContentType = false }) => {
     // Each card's entrance delay is fixed the first time it renders, by booking the next free
-    // slot on a timeline. Stored per id so re-renders never change (or replay) it.
-    const entranceRef = useRef<{ delays: Map<number, number>; lastSlot: number }>({ delays: new Map(), lastSlot: 0 });
+    // slot on a timeline. Stored per item key so re-renders never change (or replay) it.
+    const entranceRef = useRef<{ delays: Map<string, number>; lastSlot: number }>({ delays: new Map(), lastSlot: 0 });
 
-    const getEntranceDelay = (id: number): number => {
+    const getEntranceDelay = (key: string): number => {
         const entrance = entranceRef.current;
-        let delay = entrance.delays.get(id);
+        let delay = entrance.delays.get(key);
         if (delay === undefined) {
             const now = performance.now();
             const slot = Math.max(now, entrance.lastSlot + CARD_STAGGER_MS);
             entrance.lastSlot = slot;
             delay = slot - now;
-            entrance.delays.set(id, delay);
+            entrance.delays.set(key, delay);
         }
         return delay;
     };
@@ -53,11 +53,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
 
     return (
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-8 animate-fade-in mb-10">
-            {items.map((item) => (
+            {items.map((item) => {
+                const itemKey = getContentKey(item);
+                return (
                 <div
-                    key={item.id}
+                    key={itemKey}
                     className="animate-card-in"
-                    style={{ animationDelay: `${getEntranceDelay(item.id)}ms` }}
+                    style={{ animationDelay: `${getEntranceDelay(itemKey)}ms` }}
                 >
                     <ContentCard
                         id={item.id}
@@ -68,11 +70,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
                         hasTrailer={!!item.trailer}
                         reason={item.reason}
                         contentType={showContentType ? item.content_type : undefined}
-                        isSelected={item.id === selectedItemId}
-                        onClick={onItemClick}
+                        isSelected={itemKey === selectedItemKey}
+                        onClick={() => onItemClick(itemKey)}
                     />
                 </div>
-            ))}
+                );
+            })}
 
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                 <ContentCardSkeleton key={`remaining-skeleton-${index}`} />
