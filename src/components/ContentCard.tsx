@@ -10,7 +10,9 @@ interface ContentCardProps {
   imageUrl: string | null;   // poster, or a book's cover
   year: number | null;
   byline?: string;           // a book's authors, shown where movies show their type
-  isBook?: boolean;          // books without a cover get a typographic one instead of the placeholder
+  textCover?: boolean;       // books and papers without a cover get a typographic one instead of the placeholder
+  coverKicker?: string;      // small heading on the typographic cover (a paper's venue)
+  citationCount?: number;    // papers: shown where movies show their rating
   voteAverage?: number;
   contentType?: ContentType;
   hasTrailer?: boolean;
@@ -24,7 +26,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
   imageUrl,
   year,
   byline,
-  isBook = false,
+  textCover = false,
+  coverKicker,
+  citationCount,
   voteAverage,
   contentType,
   hasTrailer = false,
@@ -34,6 +38,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
 }) => {
   // Format rating to one decimal place if available
   const rating = voteAverage ? voteAverage.toFixed(1) : null;
+  const citations = citationCount != null
+    ? `${new Intl.NumberFormat('en-US', { notation: 'compact' }).format(citationCount)} cited`
+    : null;
   
   
   const handleClick = () => {
@@ -69,7 +76,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </span>
         )}
 
-        {imageUrl || isBook ? (
+        {imageUrl || textCover ? (
           <>
             {imageUrl ? (
               <Image
@@ -82,7 +89,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
             ) : (
               <div className="absolute inset-0">
                 {/* No author on the card's cover: the overlay below already shows it */}
-                <TypographicCover title={title} />
+                <TypographicCover title={title} kicker={coverKicker} />
               </div>
             )}
             {/* Gradient overlay - subtle by default, stronger on hover */}
@@ -90,7 +97,8 @@ const ContentCard: React.FC<ContentCardProps> = ({
             
             {/* Text container - positioned at bottom with padding */}
             <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-0 group-hover:translate-y-0 transition-transform duration-300">
-              <h3 className="font-bold text-white text-lg tracking-tight mb-1 drop-shadow-sm">{title}</h3>
+              {/* A typographic cover already shows the title; repeating it would collide with long titles */}
+              {imageUrl && <h3 className="font-bold text-white text-lg tracking-tight mb-1 drop-shadow-sm line-clamp-3">{title}</h3>}
               
               {/* Year and rating row with flex layout */}
               <div className="flex justify-between items-center">
@@ -105,6 +113,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
                     </svg>
                     {rating}
                   </span>
+                )}
+                {citations && (
+                  <span className="text-gray-200 text-xs font-medium bg-black/40 px-2 py-0.5 rounded-md">{citations}</span>
                 )}
               </div>
 

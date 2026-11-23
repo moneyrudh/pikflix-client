@@ -3,10 +3,11 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import {
   Content, ContentType, Movie, Show, ProviderData, ProviderResponse,
-  getBookAuthors, getContentBackdropUrl, getContentImageUrl, getContentTitle, getContentYear,
+  getAuthorShort, getAuthorsLine, getContentBackdropUrl, getContentImageUrl, getContentTitle, getContentYear, isWatchItem,
 } from '@/types/content';
 import ProvidersSection, { ProvidersSkeletonSection } from './ProvidersSection';
 import BookDetails from './BookDetails';
+import PaperDetails from './PaperDetails';
 import TypographicCover from './TypographicCover';
 
 interface ContentDetailsPanelProps {
@@ -62,7 +63,7 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
 
   useEffect(() => {
     // Where-to-watch is movie/show only
-    if (item && isOpen && item.content_type !== ContentType.BOOK) {
+    if (item && isOpen && isWatchItem(item)) {
       fetchProviders(item.id, item.content_type);
     }
 
@@ -100,7 +101,7 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
   if (!item) return null;
 
   const isShow = item.content_type === ContentType.SHOW;
-  const isBook = item.content_type === ContentType.BOOK;
+  const isReading = !isWatchItem(item); // books and papers: no backdrop, poster, trailer or providers
   const title = getContentTitle(item);
   const year = getContentYear(item);
 
@@ -129,7 +130,7 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
 
   const backdropUrl = getContentBackdropUrl(item);
   const posterUrl = getContentImageUrl(item);
-  const trailer = item.content_type === ContentType.BOOK ? null : item.trailer;
+  const trailer = isWatchItem(item) ? item.trailer : null;
 
   // While the trailer plays, the close buttons fade out with YouTube's controls when the
   // pointer leaves the video. Only on devices that can hover, so touch screens keep them visible.
@@ -176,8 +177,8 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
               priority
               sizes="(max-width: 768px) 100vw, 50vw"
             />
-          ) : item.content_type === ContentType.BOOK ? (
-            // Books have no backdrop: a blurred copy of the cover fills the hero (the sharp cover sits on
+          ) : !isWatchItem(item) ? (
+            // Books and papers have no backdrop: a blurred copy of the cover fills the hero (the sharp cover sits on
             // top, below). The blur is scaled past the edges, so it needs its own clipping box: the hero
             // itself can't clip, because the movie poster hangs half outside it.
             <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -195,14 +196,19 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
 
           <div className="absolute inset-0 bg-gradient-to-t from-theme-surface via-theme-surface/80 to-transparent"></div>
 
-          {/* Books: the cover itself, centered in the hero (instead of the half-overlapping poster) */}
-          {item.content_type === ContentType.BOOK && (
+          {/* Books and papers: the cover itself, centered in the hero (instead of the half-overlapping poster) */}
+          {!isWatchItem(item) && (
             <div className="absolute inset-0 flex items-center justify-center pt-6 pb-4">
               <div className="relative h-full aspect-[2/3] rounded-md overflow-hidden shadow-2xl">
                 {posterUrl ? (
                   <Image src={posterUrl} alt={`${title} cover`} fill className="object-cover" priority sizes="(max-width: 768px) 60vw, 25vw" />
                 ) : (
-                  <TypographicCover title={title} author={item.authors[0]?.name} />
+                  <TypographicCover
+                    layout="panel"
+                    title={title}
+                    author={getAuthorShort(item)}
+                    kicker={item.content_type === ContentType.PAPER ? item.venue ?? undefined : undefined}
+                  />
                 )}
               </div>
             </div>
@@ -227,7 +233,7 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
           )}
 
           {/* Half-overlaps the hero normally; slides fully below it while the trailer covers the hero */}
-          {!isBook && (
+          {!isReading && (
             <div className={`absolute bottom-0 left-8 z-[6] transform transition-transform duration-500 ease-out w-28 h-40 md:w-32 md:h-48 shadow-xl rounded-lg overflow-hidden border-2 border-theme-surface ${
               isTrailerPlaying ? 'translate-y-[calc(100%+1rem)]' : 'translate-y-1/2'
             }`}>
@@ -280,12 +286,12 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
           )}
         </div>
 
-        <div className={`px-8 pb-8 transition-[padding] duration-500 ease-out ${isTrailerPlaying ? 'pt-48 md:pt-52' : isBook ? 'pt-6' : 'pt-24'}`}>
+        <div className={`px-8 pb-8 transition-[padding] duration-500 ease-out ${isTrailerPlaying ? 'pt-48 md:pt-52' : isReading ? 'pt-6' : 'pt-24'}`}>
           {/* Title and year */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-theme-text">{title}</h1>
-            {item.content_type === ContentType.BOOK && item.authors.length > 0 && (
-              <p className="text-theme-text text-lg">by {getBookAuthors(item)}</p>
+            {!isWatchItem(item) && item.authors.length > 0 && (
+              <p className="text-theme-text text-lg">by {getAuthorsLine(item)}</p>
             )}
             {year && (
               <p className="text-theme-text-muted text-xl">
@@ -302,6 +308,8 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
 
           {item.content_type === ContentType.BOOK ? (
             <BookDetails book={item} />
+          ) : item.content_type === ContentType.PAPER ? (
+            <PaperDetails paper={item} />
           ) : (
             <>
             {/* Key stats row */}
