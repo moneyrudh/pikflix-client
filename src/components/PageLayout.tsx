@@ -1,5 +1,6 @@
 // components/PageLayout.tsx
 import React from 'react';
+import Link from 'next/link';
 import ThemeSelector from './ThemeSelector';
 
 interface PageLayoutProps {
@@ -22,6 +23,9 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen })
           </a>
           
           <div className="flex items-center space-x-4">
+            <Link href="/chat" className="text-sm font-medium text-theme-text-muted hover:text-theme-primary transition-colors duration-300 px-2 py-3">
+              Chat
+            </Link>
             <ThemeSelector />
           </div>
         </div>
