@@ -150,6 +150,7 @@ export interface Show {
 export const ContentType = {
 	MOVIE: 'movie',
 	SHOW: 'show',
+	BOOK: 'book',
 } as const;
 export type ContentType = (typeof ContentType)[keyof typeof ContentType];
 
@@ -157,6 +158,7 @@ export const ContentTypeMode = {
 	MOVIE: 'movie',
 	SHOW: 'show',
 	BOTH: 'both',
+	BOOK: 'book',
 } as const;
 export type ContentTypeMode = (typeof ContentTypeMode)[keyof typeof ContentTypeMode];
 
@@ -173,6 +175,7 @@ export const MODE_MEDIA_TYPES: Record<ContentTypeMode, MediaType[]> = {
 	[ContentTypeMode.MOVIE]: [MediaType.MOVIE],
 	[ContentTypeMode.SHOW]: [MediaType.SHOW],
 	[ContentTypeMode.BOTH]: [MediaType.MOVIE, MediaType.SHOW],
+	[ContentTypeMode.BOOK]: [MediaType.BOOK],
 };
 
 export const UIState = {
@@ -182,13 +185,38 @@ export const UIState = {
 } as const;
 export type UIState = (typeof UIState)[keyof typeof UIState];
 
-export type Content = Movie | Show;
+export interface Author {
+	name: string;
+	id: string | null; // Open Library author key
+}
+
+// A book at the work level (all editions together); `id` is the Open Library work key, e.g. "OL893414W"
+export interface Book {
+	id: string;
+	title: string;
+	subtitle: string | null;
+	authors: Author[];
+	first_publish_year: number | null;
+	description: string | null; // null until loaded from /api/books/[id]
+	description_checked_at: string | null; // set once loaded, even when there's no description
+	cover_id: number | null;
+	isbns: string[];
+	subjects: string[];
+	page_count: number | null;
+	edition_count: number | null;
+	ia_ids: string[];
+	ebook_access: string | null;
+	reason?: string;
+	content_type: 'book';
+}
+
+export type Content = Movie | Show | Book;
 
 // Recommendation stream (NDJSON from /api/recommendations), one event per line.
 // The backend also sends a legacy `content` event per result; it duplicates `item` and is ignored.
 export type StreamEvent =
 	| { type: 'init'; query: string; media_types: MediaType[] }
-	| { type: 'item'; media_type: MediaType; reason: string | null; data: Omit<Movie, 'content_type'> | Omit<Show, 'content_type'> }
+	| { type: 'item'; media_type: MediaType; reason: string | null; data: Omit<Movie, 'content_type'> | Omit<Show, 'content_type'> | Omit<Book, 'content_type'> }
 	| { type: 'content' }
 	| { type: 'done'; count: number; dropped: number }
 	| { type: 'error'; message: string };
@@ -245,5 +273,30 @@ export function getContentTitle(item: Content): string {
 }
 
 export function getContentDate(item: Content): string | null {
+	if (item.content_type === ContentType.BOOK) return item.first_publish_year?.toString() ?? null;
 	return item.content_type === ContentType.SHOW ? item.first_air_date : item.release_date;
+}
+
+// Year from the date's own digits. `new Date("2000-01-01").getFullYear()` parses as UTC midnight,
+// which is still 1999 in the Americas.
+export function getContentYear(item: Content): number | null {
+	const date = getContentDate(item);
+	return date ? parseInt(date.substring(0, 4), 10) : null;
+}
+
+// Poster for movies/shows, cover for books
+export function getContentImageUrl(item: Content): string | null {
+	if (item.content_type === ContentType.BOOK) {
+		return item.cover_id ? `https://covers.openlibrary.org/b/id/${item.cover_id}-L.jpg` : null;
+	}
+	return item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null;
+}
+
+export function getContentBackdropUrl(item: Content): string | null {
+	if (item.content_type === ContentType.BOOK || !item.backdrop_path) return null;
+	return `https://image.tmdb.org/t/p/w1280${item.backdrop_path}`;
+}
+
+export function getBookAuthors(book: Book): string {
+	return book.authors.map(author => author.name).join(', ');
 }

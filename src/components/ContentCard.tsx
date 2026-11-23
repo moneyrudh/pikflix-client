@@ -2,13 +2,15 @@
 import React from 'react';
 import Image from 'next/image';
 import ContentPlaceholder from './ContentPlaceholder';
+import TypographicCover from './TypographicCover';
 import { ContentType } from '@/types/content';
 
 interface ContentCardProps {
-  id: number;
   title: string;
-  posterPath: string | null;
-  releaseDate: string | null;
+  imageUrl: string | null;   // poster, or a book's cover
+  year: number | null;
+  byline?: string;           // a book's authors, shown where movies show their type
+  isBook?: boolean;          // books without a cover get a typographic one instead of the placeholder
   voteAverage?: number;
   contentType?: ContentType;
   hasTrailer?: boolean;
@@ -18,10 +20,11 @@ interface ContentCardProps {
 }
 
 const ContentCard: React.FC<ContentCardProps> = ({
-  id,
   title,
-  posterPath,
-  releaseDate,
+  imageUrl,
+  year,
+  byline,
+  isBook = false,
   voteAverage,
   contentType,
   hasTrailer = false,
@@ -29,15 +32,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
   isSelected = false,
   onClick
 }) => {
-  // Extract year from release date
-  const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
-  
   // Format rating to one decimal place if available
   const rating = voteAverage ? voteAverage.toFixed(1) : null;
   
-  // TMDB image URL
-  const hasImage = posterPath !== null && posterPath !== '';
-  const imageUrl = hasImage ? `https://image.tmdb.org/t/p/w500${posterPath}` : '';
   
   const handleClick = () => {
     onClick();
@@ -72,15 +69,22 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </span>
         )}
 
-        {hasImage ? (
+        {imageUrl || isBook ? (
           <>
-            <Image
-              src={imageUrl}
-              alt={title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="absolute inset-0">
+                {/* No author on the card's cover: the overlay below already shows it */}
+                <TypographicCover title={title} />
+              </div>
+            )}
             {/* Gradient overlay - subtle by default, stronger on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-300"></div>
             
@@ -91,7 +95,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
               {/* Year and rating row with flex layout */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-200 text-xs font-medium tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                  {year}{contentType && <> · {contentType === ContentType.SHOW ? 'Show' : 'Movie'}</>}
+                  {year}{byline ? <> · {byline}</> : contentType && <> · {contentType === ContentType.SHOW ? 'Show' : 'Movie'}</>}
                 </span>
                 
                 {rating && (
