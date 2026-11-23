@@ -1,6 +1,5 @@
 // components/PageLayout.tsx
 import React from 'react';
-import { useTheme } from '@/lib/ThemeContext';
 import ThemeSelector from './ThemeSelector';
 
 interface PageLayoutProps {
@@ -14,6 +13,8 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen })
       {/* Full-width navbar - unchanged */}
       <header className="fixed top-0 z-50 w-full border-none border-theme-text/5 bg-transparent">
         <div className="w-full max-w-screen mx-auto px-8 lg:px-12 py-4 flex justify-between items-center">
+          {/* A full page load on purpose: it resets the search. A client-side <Link> would keep the old results. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/" className="flex items-center space-x-2 group">
             <span className="text-theme-primary font-bold text-2xl tracking-tighter group-hover:text-theme-accent transition-colors duration-300">
               pikflix
