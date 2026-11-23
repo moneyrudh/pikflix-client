@@ -5,10 +5,10 @@ import ContentPlaceholder from './ContentPlaceholder';
 import { ContentType } from '@/types/content';
 
 interface ContentCardProps {
-  id: number;
   title: string;
-  posterPath: string | null;
-  releaseDate: string | null;
+  imageUrl: string | null;   // poster, or a book's cover
+  year: number | null;
+  byline?: string;           // a book's authors, shown where movies show their type
   voteAverage?: number;
   contentType?: ContentType;
   hasTrailer?: boolean;
@@ -18,10 +18,10 @@ interface ContentCardProps {
 }
 
 const ContentCard: React.FC<ContentCardProps> = ({
-  id,
   title,
-  posterPath,
-  releaseDate,
+  imageUrl,
+  year,
+  byline,
   voteAverage,
   contentType,
   hasTrailer = false,
@@ -29,15 +29,9 @@ const ContentCard: React.FC<ContentCardProps> = ({
   isSelected = false,
   onClick
 }) => {
-  // Extract year from release date
-  const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
-  
   // Format rating to one decimal place if available
   const rating = voteAverage ? voteAverage.toFixed(1) : null;
   
-  // TMDB image URL
-  const hasImage = posterPath !== null && posterPath !== '';
-  const imageUrl = hasImage ? `https://image.tmdb.org/t/p/w500${posterPath}` : '';
   
   const handleClick = () => {
     onClick();
@@ -72,7 +66,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </span>
         )}
 
-        {hasImage ? (
+        {imageUrl ? (
           <>
             <Image
               src={imageUrl}
@@ -91,7 +85,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
               {/* Year and rating row with flex layout */}
               <div className="flex justify-between items-center">
                 <span className="text-gray-200 text-xs font-medium tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-                  {year}{contentType && <> · {contentType === ContentType.SHOW ? 'Show' : 'Movie'}</>}
+                  {year}{byline ? <> · {byline}</> : contentType && <> · {contentType === ContentType.SHOW ? 'Show' : 'Movie'}</>}
                 </span>
                 
                 {rating && (

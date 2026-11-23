@@ -7,7 +7,14 @@ import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
 import ContentDetailsPanel from '@/components/ContentDetailsPanel';
 import Spinner from '@/components/Spinner';
-import { Content, ContentType, ContentTypeMode, MediaType, MODE_MEDIA_TYPES, StreamEvent, UIState, ConversationTurn, RecommendationSummary, getContentKey, getContentTitle, getContentDate } from '@/types/content';
+import { Content, ContentType, ContentTypeMode, MediaType, MODE_MEDIA_TYPES, StreamEvent, UIState, ConversationTurn, RecommendationSummary, getContentKey, getContentTitle, getContentYear } from '@/types/content';
+
+// Example searches per mode, longest for the widest screens ("both" uses the movie ones)
+const PLACEHOLDERS = {
+	movie: { xl: "something with time travel and 90s nostalgia...", lg: "time travel movies with plot twists", md: "mind-bending sci-fi films", base: "obscure horror movies" },
+	show: { xl: "gripping limited series with unreliable narrators...", lg: "dark comedy shows like Succession", md: "best sci-fi series ever", base: "thriller TV shows" },
+	book: { xl: "cozy fantasy with found family and low stakes...", lg: "literary thrillers with unreliable narrators", md: "classic sci-fi novels", base: "short horror novels" },
+};
 
 export default function Page() {
 	return (
@@ -69,12 +76,13 @@ function Home() {
 		setContentTypeMode(prev => {
 			if (prev === ContentTypeMode.MOVIE) return ContentTypeMode.SHOW;
 			if (prev === ContentTypeMode.SHOW) return ContentTypeMode.BOTH;
+			if (prev === ContentTypeMode.BOTH) return ContentTypeMode.BOOK;
 			return ContentTypeMode.MOVIE;
 		});
 	};
 
-	const contentTypeIcon = contentTypeMode === ContentTypeMode.MOVIE ? '🎬' : contentTypeMode === ContentTypeMode.SHOW ? '📺' : '🍿';
-	const contentTypeLabel = contentTypeMode === ContentTypeMode.MOVIE ? 'Movies' : contentTypeMode === ContentTypeMode.SHOW ? 'Shows' : 'Movies & Shows';
+	const contentTypeIcon = { [ContentTypeMode.MOVIE]: '🎬', [ContentTypeMode.SHOW]: '📺', [ContentTypeMode.BOTH]: '🍿', [ContentTypeMode.BOOK]: '📚' }[contentTypeMode];
+	const contentTypeLabel = { [ContentTypeMode.MOVIE]: 'Movies', [ContentTypeMode.SHOW]: 'Shows', [ContentTypeMode.BOTH]: 'Movies & Shows', [ContentTypeMode.BOOK]: 'Books' }[contentTypeMode];
 
 	// Check for query in URL params on initial load
 	useEffect(() => {
@@ -194,26 +202,11 @@ function Home() {
 	}, [uiState]);
 
 	const getPlaceholderText = () => {
-		switch (screenSize) {
-			case 'xl':
-				return contentTypeMode === ContentTypeMode.SHOW
-					? "gripping limited series with unreliable narrators..."
-					: "something with time travel and 90s nostalgia...";
-			case 'lg':
-				return contentTypeMode === ContentTypeMode.SHOW
-					? "dark comedy shows like Succession"
-					: "time travel movies with plot twists";
-			case 'md':
-				return contentTypeMode === ContentTypeMode.SHOW
-					? "best sci-fi series ever"
-					: "mind-bending sci-fi films";
-			case 'sm':
-			case 'base':
-			default:
-				return contentTypeMode === ContentTypeMode.SHOW
-					? "thriller TV shows"
-					: "obscure horror movies";
-		}
+		const examples = contentTypeMode === ContentTypeMode.SHOW ? PLACEHOLDERS.show
+			: contentTypeMode === ContentTypeMode.BOOK ? PLACEHOLDERS.book
+			: PLACEHOLDERS.movie;
+		if (screenSize === 'xl' || screenSize === 'lg' || screenSize === 'md') return examples[screenSize];
+		return examples.base;
 	};
 
 	const isNewItem = (item: Content, existing: Content[]) => {
@@ -298,8 +291,8 @@ function Home() {
 
 			const handleEvent = (event: StreamEvent) => {
 				if (event.type === 'item') {
-					// Only watch media render today; books/papers get their own cards later
-					if (event.media_type !== MediaType.MOVIE && event.media_type !== MediaType.SHOW) return;
+					// Papers don't have cards yet
+					if (event.media_type === MediaType.PAPER) return;
 					const item = { ...event.data, content_type: event.media_type, reason: event.reason ?? undefined } as Content;
 					if (isNewItem(item, streamedItems)) {
 						streamedItems = [...streamedItems, item];
@@ -355,10 +348,7 @@ function Home() {
 					items: streamedItems,
 					recommendations: streamedItems.map(item => ({
 						title: getContentTitle(item),
-						year: (() => {
-							const d = getContentDate(item);
-							return d ? parseInt(d.substring(0, 4)) : null;
-						})(),
+						year: getContentYear(item),
 						reason: item.reason || null,
 					})),
 				};

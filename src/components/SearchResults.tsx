@@ -1,6 +1,6 @@
 // components/SearchResults.tsx
 import React, { useRef } from 'react';
-import { Content, ContentType, getContentKey, getContentTitle, getContentDate } from '@/types/content';
+import { Content, ContentType, getContentImageUrl, getContentKey, getContentTitle, getContentYear } from '@/types/content';
 import ContentCard from './ContentCard';
 import ContentCardSkeleton from './ContentCardSkeleton';
 
@@ -62,12 +62,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
                     style={{ animationDelay: `${getEntranceDelay(itemKey)}ms` }}
                 >
                     <ContentCard
-                        id={item.id}
                         title={getContentTitle(item)}
-                        posterPath={item.poster_path}
-                        releaseDate={getContentDate(item)}
-                        voteAverage={item.vote_average}
-                        hasTrailer={!!item.trailer}
+                        imageUrl={getContentImageUrl(item)}
+                        year={getContentYear(item)}
+                        // First author only: Open Library lists translators as authors too
+                        byline={item.content_type === ContentType.BOOK ? item.authors[0]?.name : undefined}
+                        voteAverage={item.content_type === ContentType.BOOK ? undefined : item.vote_average}
+                        hasTrailer={item.content_type !== ContentType.BOOK && !!item.trailer}
                         reason={item.reason}
                         contentType={showContentType ? item.content_type : undefined}
                         isSelected={itemKey === selectedItemKey}
