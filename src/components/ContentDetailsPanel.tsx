@@ -7,6 +7,7 @@ import {
 } from '@/types/content';
 import ProvidersSection, { ProvidersSkeletonSection } from './ProvidersSection';
 import BookDetails from './BookDetails';
+import TypographicCover from './TypographicCover';
 
 interface ContentDetailsPanelProps {
   item: Content | null;
@@ -179,21 +180,37 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
               priority
               sizes="(max-width: 768px) 100vw, 50vw"
             />
-          ) : isBook && posterUrl ? (
-            // Books have no backdrop: a blurred, dimmed cover fills the hero instead of an empty gradient
-            <Image
-              src={posterUrl}
-              alt=""
-              aria-hidden="true"
-              className="object-cover blur-2xl scale-110 opacity-50"
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
+          ) : item.content_type === ContentType.BOOK ? (
+            // Books have no backdrop: a blurred copy of the cover fills the hero (the sharp cover sits on
+            // top, below). The blur is scaled past the edges, so it needs its own clipping box: the hero
+            // itself can't clip, because the movie poster hangs half outside it.
+            <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+              <div className="absolute inset-0 blur-2xl scale-110 opacity-60">
+                {posterUrl ? (
+                  <Image src={posterUrl} alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+                ) : (
+                  <TypographicCover title={title} />
+                )}
+              </div>
+            </div>
           ) : (
             <div className="w-full h-full bg-gradient-to-b from-theme-primary/20 to-theme-surface"></div>
           )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-theme-surface via-theme-surface/80 to-transparent"></div>
+
+          {/* Books: the cover itself, centered in the hero (instead of the half-overlapping poster) */}
+          {item.content_type === ContentType.BOOK && (
+            <div className="absolute inset-0 flex items-center justify-center pt-6 pb-4">
+              <div className="relative h-full aspect-[2/3] rounded-md overflow-hidden shadow-2xl">
+                {posterUrl ? (
+                  <Image src={posterUrl} alt={`${title} cover`} fill className="object-cover" priority sizes="(max-width: 768px) 60vw, 25vw" />
+                ) : (
+                  <TypographicCover title={title} author={item.authors[0]?.name} />
+                )}
+              </div>
+            </div>
+          )}
 
           {trailer && !isTrailerPlaying && (
             <button
@@ -214,23 +231,25 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
           )}
 
           {/* Half-overlaps the hero normally; slides fully below it while the trailer covers the hero */}
-          <div className={`absolute bottom-0 left-8 z-[6] transform transition-transform duration-500 ease-out w-28 h-40 md:w-32 md:h-48 shadow-xl rounded-lg overflow-hidden border-2 border-theme-surface ${
-            isTrailerPlaying ? 'translate-y-[calc(100%+1rem)]' : 'translate-y-1/2'
-          }`}>
-            {posterUrl ? (
-              <Image
-                src={posterUrl}
-                alt={`${title} ${isBook ? 'cover' : 'poster'}`}
-                className="object-cover"
-                fill
-                sizes="(max-width: 768px) 112px, 128px"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-theme-text/10">
-                <span className="text-theme-text-muted">{isBook ? 'No cover' : 'No poster'}</span>
-              </div>
-            )}
-          </div>
+          {!isBook && (
+            <div className={`absolute bottom-0 left-8 z-[6] transform transition-transform duration-500 ease-out w-28 h-40 md:w-32 md:h-48 shadow-xl rounded-lg overflow-hidden border-2 border-theme-surface ${
+              isTrailerPlaying ? 'translate-y-[calc(100%+1rem)]' : 'translate-y-1/2'
+            }`}>
+              {posterUrl ? (
+                <Image
+                  src={posterUrl}
+                  alt={`${title} poster`}
+                  className="object-cover"
+                  fill
+                  sizes="(max-width: 768px) 112px, 128px"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-theme-text/10">
+                  <span className="text-theme-text-muted">No poster</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {trailer && isTrailerPlaying && (
             <div className="absolute inset-0 z-[5] bg-black">
@@ -265,7 +284,7 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
           )}
         </div>
 
-        <div className={`px-8 pb-8 transition-[padding] duration-500 ease-out ${isTrailerPlaying ? 'pt-48 md:pt-52' : 'pt-24'}`}>
+        <div className={`px-8 pb-8 transition-[padding] duration-500 ease-out ${isTrailerPlaying ? 'pt-48 md:pt-52' : isBook ? 'pt-6' : 'pt-24'}`}>
           {/* Title and year */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-theme-text">{title}</h1>

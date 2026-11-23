@@ -2,6 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import ContentPlaceholder from './ContentPlaceholder';
+import TypographicCover from './TypographicCover';
 import { ContentType } from '@/types/content';
 
 interface ContentCardProps {
@@ -9,6 +10,7 @@ interface ContentCardProps {
   imageUrl: string | null;   // poster, or a book's cover
   year: number | null;
   byline?: string;           // a book's authors, shown where movies show their type
+  isBook?: boolean;          // books without a cover get a typographic one instead of the placeholder
   voteAverage?: number;
   contentType?: ContentType;
   hasTrailer?: boolean;
@@ -22,6 +24,7 @@ const ContentCard: React.FC<ContentCardProps> = ({
   imageUrl,
   year,
   byline,
+  isBook = false,
   voteAverage,
   contentType,
   hasTrailer = false,
@@ -66,15 +69,22 @@ const ContentCard: React.FC<ContentCardProps> = ({
           </span>
         )}
 
-        {imageUrl ? (
+        {imageUrl || isBook ? (
           <>
-            <Image
-              src={imageUrl}
-              alt={title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            />
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="absolute inset-0">
+                {/* No author on the card's cover: the overlay below already shows it */}
+                <TypographicCover title={title} />
+              </div>
+            )}
             {/* Gradient overlay - subtle by default, stronger on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-70 group-hover:opacity-90 transition-opacity duration-300"></div>
             

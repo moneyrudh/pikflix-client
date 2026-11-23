@@ -67,6 +67,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
                         year={getContentYear(item)}
                         // First author only: Open Library lists translators as authors too
                         byline={item.content_type === ContentType.BOOK ? item.authors[0]?.name : undefined}
+                        isBook={item.content_type === ContentType.BOOK}
                         voteAverage={item.content_type === ContentType.BOOK ? undefined : item.vote_average}
                         hasTrailer={item.content_type !== ContentType.BOOK && !!item.trailer}
                         reason={item.reason}
