@@ -1,4 +1,11 @@
 // tailwind.config.js
+function themeColor(variable) {
+  return ({ opacityValue }) =>
+    opacityValue === undefined || opacityValue === '1'
+      ? `var(${variable})`
+      : `color-mix(in srgb, var(${variable}) calc(${opacityValue} * 100%), transparent)`;
+}
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -8,16 +15,17 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // Define theme colors using CSS variables
+      // Theme colors come from CSS variables (globals.css). Opacity modifiers (`border-theme-text/10`)
+      // mix the variable with transparent; a plain 'var(...)' value would make Tailwind drop those classes.
       colors: {
         theme: {
-          primary: 'var(--color-primary)',
-          secondary: 'var(--color-secondary)',
-          accent: 'var(--color-accent)',
-          background: 'var(--color-background)',
-          surface: 'var(--color-surface)',
-          text: 'var(--color-text)',
-          'text-muted': 'var(--color-text-muted)',
+          primary: themeColor('--color-primary'),
+          secondary: themeColor('--color-secondary'),
+          accent: themeColor('--color-accent'),
+          background: themeColor('--color-background'),
+          surface: themeColor('--color-surface'),
+          text: themeColor('--color-text'),
+          'text-muted': themeColor('--color-text-muted'),
         },
       },
       backgroundImage: {
