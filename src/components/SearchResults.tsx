@@ -1,6 +1,6 @@
 // components/SearchResults.tsx
 import React, { useRef } from 'react';
-import { Content, ContentType, getContentImageUrl, getContentKey, getContentTitle, getContentYear } from '@/types/content';
+import { Content, ContentType, getAuthorShort, getContentImageUrl, isWatchItem, getContentKey, getContentTitle, getContentYear } from '@/types/content';
 import ContentCard from './ContentCard';
 import ContentCardSkeleton from './ContentCardSkeleton';
 
@@ -65,11 +65,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({ items, isLoading, selecte
                         title={getContentTitle(item)}
                         imageUrl={getContentImageUrl(item)}
                         year={getContentYear(item)}
-                        // First author only: Open Library lists translators as authors too
-                        byline={item.content_type === ContentType.BOOK ? item.authors[0]?.name : undefined}
-                        isBook={item.content_type === ContentType.BOOK}
-                        voteAverage={item.content_type === ContentType.BOOK ? undefined : item.vote_average}
-                        hasTrailer={item.content_type !== ContentType.BOOK && !!item.trailer}
+                        byline={isWatchItem(item) ? undefined : getAuthorShort(item)}
+                        textCover={!isWatchItem(item)}
+                        coverKicker={item.content_type === ContentType.PAPER ? item.venue ?? undefined : undefined}
+                        citationCount={item.content_type === ContentType.PAPER ? item.citation_count ?? undefined : undefined}
+                        voteAverage={isWatchItem(item) ? item.vote_average : undefined}
+                        hasTrailer={isWatchItem(item) && !!item.trailer}
                         reason={item.reason}
                         contentType={showContentType ? item.content_type : undefined}
                         isSelected={itemKey === selectedItemKey}

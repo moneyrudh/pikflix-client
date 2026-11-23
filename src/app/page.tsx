@@ -7,13 +7,14 @@ import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
 import ContentDetailsPanel from '@/components/ContentDetailsPanel';
 import Spinner from '@/components/Spinner';
-import { Content, ContentTypeMode, MediaType, MODE_MEDIA_TYPES, StreamEvent, UIState, ConversationTurn, RecommendationSummary, getContentKey, getContentTitle, getContentYear } from '@/types/content';
+import { Content, ContentTypeMode, MODE_MEDIA_TYPES, StreamEvent, UIState, ConversationTurn, RecommendationSummary, getContentKey, getContentTitle, getContentYear } from '@/types/content';
 
 // Example searches per mode, longest for the widest screens ("both" uses the movie ones)
 const PLACEHOLDERS = {
 	movie: { xl: "something with time travel and 90s nostalgia...", lg: "time travel movies with plot twists", md: "mind-bending sci-fi films", base: "obscure horror movies" },
 	show: { xl: "gripping limited series with unreliable narrators...", lg: "dark comedy shows like Succession", md: "best sci-fi series ever", base: "thriller TV shows" },
 	book: { xl: "cozy fantasy with found family and low stakes...", lg: "literary thrillers with unreliable narrators", md: "classic sci-fi novels", base: "short horror novels" },
+	paper: { xl: "how do we form long-term memories...", lg: "why do large language models hallucinate", md: "CRISPR off-target effects", base: "sleep and memory" },
 };
 
 export default function Page() {
@@ -77,12 +78,13 @@ function Home() {
 			if (prev === ContentTypeMode.MOVIE) return ContentTypeMode.SHOW;
 			if (prev === ContentTypeMode.SHOW) return ContentTypeMode.BOTH;
 			if (prev === ContentTypeMode.BOTH) return ContentTypeMode.BOOK;
+			if (prev === ContentTypeMode.BOOK) return ContentTypeMode.PAPER;
 			return ContentTypeMode.MOVIE;
 		});
 	};
 
-	const contentTypeIcon = { [ContentTypeMode.MOVIE]: '🎬', [ContentTypeMode.SHOW]: '📺', [ContentTypeMode.BOTH]: '🍿', [ContentTypeMode.BOOK]: '📚' }[contentTypeMode];
-	const contentTypeLabel = { [ContentTypeMode.MOVIE]: 'Movies', [ContentTypeMode.SHOW]: 'Shows', [ContentTypeMode.BOTH]: 'Movies & Shows', [ContentTypeMode.BOOK]: 'Books' }[contentTypeMode];
+	const contentTypeIcon = { [ContentTypeMode.MOVIE]: '🎬', [ContentTypeMode.SHOW]: '📺', [ContentTypeMode.BOTH]: '🍿', [ContentTypeMode.BOOK]: '📚', [ContentTypeMode.PAPER]: '📄' }[contentTypeMode];
+	const contentTypeLabel = { [ContentTypeMode.MOVIE]: 'Movies', [ContentTypeMode.SHOW]: 'Shows', [ContentTypeMode.BOTH]: 'Movies & Shows', [ContentTypeMode.BOOK]: 'Books', [ContentTypeMode.PAPER]: 'Papers' }[contentTypeMode];
 
 	// Check for query in URL params on initial load
 	useEffect(() => {
@@ -204,6 +206,7 @@ function Home() {
 	const getPlaceholderText = () => {
 		const examples = contentTypeMode === ContentTypeMode.SHOW ? PLACEHOLDERS.show
 			: contentTypeMode === ContentTypeMode.BOOK ? PLACEHOLDERS.book
+			: contentTypeMode === ContentTypeMode.PAPER ? PLACEHOLDERS.paper
 			: PLACEHOLDERS.movie;
 		if (screenSize === 'xl' || screenSize === 'lg' || screenSize === 'md') return examples[screenSize];
 		return examples.base;
@@ -291,8 +294,6 @@ function Home() {
 
 			const handleEvent = (event: StreamEvent) => {
 				if (event.type === 'item') {
-					// Papers don't have cards yet
-					if (event.media_type === MediaType.PAPER) return;
 					const item = { ...event.data, content_type: event.media_type, reason: event.reason ?? undefined } as Content;
 					if (isNewItem(item, streamedItems)) {
 						streamedItems = [...streamedItems, item];
@@ -620,13 +621,27 @@ function Home() {
 							className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
 							>
 							The Movie Database (TMDB)
-							</a> and <a
+							</a>, <a
 							href="https://www.justwatch.com"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
 							>
 							JustWatch
+							</a>, books from <a
+							href="https://openlibrary.org"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
+							>
+							Open Library
+							</a> and papers from <a
+							href="https://www.semanticscholar.org"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-theme-primary hover:text-theme-accent transition-colors duration-300"
+							>
+							Semantic Scholar
 							</a>
 						</div>
 						)}

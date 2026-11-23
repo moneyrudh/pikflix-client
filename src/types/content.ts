@@ -151,6 +151,7 @@ export const ContentType = {
 	MOVIE: 'movie',
 	SHOW: 'show',
 	BOOK: 'book',
+	PAPER: 'paper',
 } as const;
 export type ContentType = (typeof ContentType)[keyof typeof ContentType];
 
@@ -159,6 +160,7 @@ export const ContentTypeMode = {
 	SHOW: 'show',
 	BOTH: 'both',
 	BOOK: 'book',
+	PAPER: 'paper',
 } as const;
 export type ContentTypeMode = (typeof ContentTypeMode)[keyof typeof ContentTypeMode];
 
@@ -176,6 +178,7 @@ export const MODE_MEDIA_TYPES: Record<ContentTypeMode, MediaType[]> = {
 	[ContentTypeMode.SHOW]: [MediaType.SHOW],
 	[ContentTypeMode.BOTH]: [MediaType.MOVIE, MediaType.SHOW],
 	[ContentTypeMode.BOOK]: [MediaType.BOOK],
+	[ContentTypeMode.PAPER]: [MediaType.PAPER],
 };
 
 export const UIState = {
@@ -210,13 +213,32 @@ export interface Book {
 	content_type: 'book';
 }
 
-export type Content = Movie | Show | Book;
+// A research paper; `id` is the Semantic Scholar paperId
+export interface Paper {
+	id: string;
+	title: string;
+	authors: Author[];
+	year: number | null;
+	publication_date: string | null;
+	venue: string | null;
+	abstract: string | null;
+	tldr: string | null; // Semantic Scholar's machine-generated one-line summary
+	doi: string | null;
+	arxiv_id: string | null;
+	citation_count: number | null;
+	fields_of_study: string[];
+	open_access_pdf: string | null;
+	reason?: string;
+	content_type: 'paper';
+}
+
+export type Content = Movie | Show | Book | Paper;
 
 // Recommendation stream (NDJSON from /api/recommendations), one event per line.
 // The backend also sends a legacy `content` event per result; it duplicates `item` and is ignored.
 export type StreamEvent =
 	| { type: 'init'; query: string; media_types: MediaType[] }
-	| { type: 'item'; media_type: MediaType; reason: string | null; data: Omit<Movie, 'content_type'> | Omit<Show, 'content_type'> | Omit<Book, 'content_type'> }
+	| { type: 'item'; media_type: MediaType; reason: string | null; data: Omit<Movie, 'content_type'> | Omit<Show, 'content_type'> | Omit<Book, 'content_type'> | Omit<Paper, 'content_type'> }
 	| { type: 'content' }
 	| { type: 'done'; count: number; dropped: number }
 	| { type: 'error'; message: string };
@@ -272,8 +294,14 @@ export function getContentTitle(item: Content): string {
 	return item.content_type === ContentType.SHOW ? item.name : item.title;
 }
 
+// Movies and shows (TMDB): posters, backdrops, trailers, watch providers
+export function isWatchItem(item: Content): item is Movie | Show {
+	return item.content_type === ContentType.MOVIE || item.content_type === ContentType.SHOW;
+}
+
 export function getContentDate(item: Content): string | null {
 	if (item.content_type === ContentType.BOOK) return item.first_publish_year?.toString() ?? null;
+	if (item.content_type === ContentType.PAPER) return item.publication_date ?? item.year?.toString() ?? null;
 	return item.content_type === ContentType.SHOW ? item.first_air_date : item.release_date;
 }
 
@@ -286,6 +314,7 @@ export function getContentYear(item: Content): number | null {
 
 // Poster for movies/shows, cover for books
 export function getContentImageUrl(item: Content): string | null {
+	if (item.content_type === ContentType.PAPER) return null; // papers get a typographic cover
 	if (item.content_type === ContentType.BOOK) {
 		return item.cover_id ? `https://covers.openlibrary.org/b/id/${item.cover_id}-L.jpg` : null;
 	}
@@ -293,10 +322,22 @@ export function getContentImageUrl(item: Content): string | null {
 }
 
 export function getContentBackdropUrl(item: Content): string | null {
-	if (item.content_type === ContentType.BOOK || !item.backdrop_path) return null;
+	if (!isWatchItem(item) || !item.backdrop_path) return null;
 	return `https://image.tmdb.org/t/p/w1280${item.backdrop_path}`;
 }
 
-export function getBookAuthors(book: Book): string {
-	return book.authors.map(author => author.name).join(', ');
+// Everyone, for the details panel; papers can have dozens of authors, so they're capped
+export function getAuthorsLine(item: Book | Paper): string {
+	const names = item.authors.map(author => author.name);
+	if (item.content_type === ContentType.PAPER && names.length > 6) return `${names.slice(0, 6).join(', ')} et al.`;
+	return names.join(', ');
+}
+
+// One line for a card: a book's first author (Open Library lists translators as authors too),
+// a paper's first author's surname plus "et al."
+export function getAuthorShort(item: Book | Paper): string | undefined {
+	const first = item.authors[0]?.name;
+	if (!first || item.content_type === ContentType.BOOK) return first;
+	const surname = first.trim().split(/\s+/).pop();
+	return item.authors.length > 1 ? `${surname} et al.` : first;
 }
