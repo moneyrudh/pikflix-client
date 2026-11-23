@@ -7,7 +7,7 @@ import PageLayout from '@/components/PageLayout';
 import SearchResults from '@/components/SearchResults';
 import ContentDetailsPanel from '@/components/ContentDetailsPanel';
 import Spinner from '@/components/Spinner';
-import { Content, ContentType, ContentTypeMode, MediaType, MODE_MEDIA_TYPES, StreamEvent, UIState, ConversationTurn, RecommendationSummary, getContentKey, getContentTitle, getContentYear } from '@/types/content';
+import { Content, ContentTypeMode, MediaType, MODE_MEDIA_TYPES, StreamEvent, UIState, ConversationTurn, RecommendationSummary, getContentKey, getContentTitle, getContentYear } from '@/types/content';
 
 // Example searches per mode, longest for the widest screens ("both" uses the movie ones)
 const PLACEHOLDERS = {
@@ -18,7 +18,7 @@ const PLACEHOLDERS = {
 
 export default function Page() {
 	return (
-		<Suspense fallback={<PageLayout isDetailsPanelOpen={false} children={undefined}></PageLayout>}>
+		<Suspense fallback={<PageLayout isDetailsPanelOpen={false}>{null}</PageLayout>}>
 			<Home />
 		</Suspense>
 	)

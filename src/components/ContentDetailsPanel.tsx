@@ -18,7 +18,6 @@ interface ContentDetailsPanelProps {
 const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen, onClose }) => {
   const [providers, setProviders] = useState<ProviderData | null>(null);
   const [isLoadingProviders, setIsLoadingProviders] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   // Trailer is a click-to-play facade: nothing loads from YouTube until the user asks for it
   const [isTrailerPlaying, setIsTrailerPlaying] = useState<boolean>(false);
@@ -28,7 +27,6 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
 
   const fetchProviders = useCallback(async (contentId: number, contentType: string) => {
     setProviders(null);
-    setError(null);
     setIsLoadingProviders(true);
 
     if (abortControllerRef.current) {
@@ -56,7 +54,6 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
         console.error('Error fetching providers:', err);
-        setError(err.message);
       }
     } finally {
       setIsLoadingProviders(false);
@@ -77,7 +74,6 @@ const ContentDetailsPanel: React.FC<ContentDetailsPanelProps> = ({ item, isOpen,
       if (!isOpen) {
         setProviders(null);
         setIsLoadingProviders(false);
-        setError(null);
       }
     };
   }, [item, isOpen, fetchProviders]);

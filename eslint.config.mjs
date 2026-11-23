@@ -10,10 +10,10 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
-    // This ignores ALL files, effectively disabling ESLint entirely
-    ignores: ["**/*"]
-  }
+    ignores: [".next/**", "node_modules/**", "next-env.d.ts"],
+  },
 ];
 
 export default eslintConfig;
