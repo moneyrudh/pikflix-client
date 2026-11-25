@@ -1,4 +1,4 @@
-import { ThemeProvider } from '@/lib/ThemeContext';
+import { THEME_INIT_SCRIPT, ThemeProvider } from '@/lib/ThemeContext';
 import './globals.css';
 import type { Metadata } from 'next';
 
@@ -25,7 +25,11 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en">
+        // data-theme is set before hydration by the init script, so React must not flag it as a mismatch
+        <html lang="en" suppressHydrationWarning>
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+            </head>
             <ThemeProvider>
                 <body>
                     {children}

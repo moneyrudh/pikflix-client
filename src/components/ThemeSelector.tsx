@@ -1,13 +1,19 @@
 // components/ThemeSelector.tsx
 import React from 'react';
 import { useTheme } from '@/lib/ThemeContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const ThemeSelector: React.FC = () => {
-    const { theme, setTheme } = useTheme();
+    const { theme, setTheme, ready } = useTheme();
+    // The slider appears at the saved theme without sliding there, then animates on later changes
+    const [animate, setAnimate] = useState(false);
+    useEffect(() => {
+        if (!ready) return;
+        const frame = requestAnimationFrame(() => setAnimate(true));
+        return () => cancelAnimationFrame(frame);
+    }, [ready]);
 
     useEffect(() => {
-        document.documentElement.setAttribute('data-theme', theme);
         // Force a repaint to ensure the slider position updates
         const slider = document.querySelector('.theme-slider');
         if (slider) {
@@ -36,7 +42,7 @@ const ThemeSelector: React.FC = () => {
                 
                 {/* Circular indicator that moves between positions */}
                 <div 
-                    className="absolute top-[3px] h-8 w-8 rounded-full transition-all duration-300 ease-out transform -translate-x-1/2 theme-slider"
+                    className={`absolute top-[3px] h-8 w-8 rounded-full ease-out transform -translate-x-1/2 theme-slider ${ready ? '' : 'opacity-0'} ${animate ? 'transition-all duration-300' : ''}`}
                     style={{ 
                         left: getSliderPosition(),
                         background: 'linear-gradient(to bottom, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',
