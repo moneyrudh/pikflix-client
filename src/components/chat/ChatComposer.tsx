@@ -1,5 +1,6 @@
 // components/chat/ChatComposer.tsx
-import React, { useRef, useState } from 'react';
+// Styled like the search bar on the home page (same box, border, focus ring and send button)
+import React, { useEffect, useRef, useState } from 'react';
 
 interface ChatComposerProps {
   busy: boolean; // a reply is streaming: the button stops it
@@ -14,11 +15,26 @@ const ChatComposer: React.FC<ChatComposerProps> = ({ busy, placeholder, onSend, 
   const [text, setText] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // "/" focuses the input, as on the search page
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = document.activeElement?.tagName;
+      if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   const resize = () => {
     const el = inputRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 180) + 'px';
+    // height is border-box but scrollHeight excludes borders: add them back
+    const border = el.offsetHeight - el.clientHeight;
+    el.style.height = Math.min(el.scrollHeight, 180) + border + 'px';
   };
 
   const submit = () => {
@@ -30,10 +46,7 @@ const ChatComposer: React.FC<ChatComposerProps> = ({ busy, placeholder, onSend, 
   };
 
   return (
-    <form
-      onSubmit={e => { e.preventDefault(); submit(); }}
-      className="flex items-end gap-2.5 rounded-xl bg-theme-surface border border-theme-text/10 py-2 pr-2 pl-4 shadow-[0_8px_24px_var(--shadow-color)] focus-within:border-theme-primary/40 transition-colors"
-    >
+    <form onSubmit={e => { e.preventDefault(); submit(); }} className="relative w-full group">
       <label htmlFor="chat-input" className="sr-only">Message PikFlix</label>
       <textarea
         id="chat-input"
@@ -42,7 +55,7 @@ const ChatComposer: React.FC<ChatComposerProps> = ({ busy, placeholder, onSend, 
         value={text}
         maxLength={MAX_CHARS}
         autoFocus
-        onChange={e => { setText(e.target.value); resize(); }}
+        onChange={e => { setText(e.target.value); requestAnimationFrame(resize); }}
         onKeyDown={e => {
           if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
@@ -50,15 +63,26 @@ const ChatComposer: React.FC<ChatComposerProps> = ({ busy, placeholder, onSend, 
           }
         }}
         placeholder={placeholder}
-        className="flex-1 resize-none bg-transparent py-2.5 text-[15px] leading-normal text-theme-text placeholder-theme-text-muted focus:outline-none"
+        className="block w-full py-4 pl-4 pr-16 bg-theme-surface rounded-lg border border-theme-text/5 shadow-[0_2px_15px_rgba(0,0,0,0.05)] focus:ring-2 focus:ring-theme-primary focus:outline-none focus:border-transparent text-theme-text placeholder-theme-text-muted resize-none overflow-y-auto transition-all duration-300"
       />
+
+      {/* "/" hint while the input is empty and unfocused, on wide screens */}
+      {!text && (
+        <div className="hidden lg:flex absolute right-16 top-[18px] items-center text-xs text-theme-primary pointer-events-none group-focus-within:hidden">
+          <kbd className="px-1.5 py-0.5 bg-theme-primary border border-theme-primary rounded text-theme-background font-mono font-bold">/</kbd>
+          <span className="ml-1 font-bold">to focus</span>
+        </div>
+      )}
+
       {busy ? (
-        <button type="button" onClick={onStop} className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg bg-theme-primary text-theme-background" aria-label="Stop generating">
+        <button type="button" onClick={onStop} className="absolute bottom-[9px] right-[8px] w-10 h-10 flex items-center justify-center rounded-lg bg-theme-primary text-theme-background hover:bg-theme-accent transition-colors duration-300" aria-label="Stop generating">
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" /></svg>
         </button>
       ) : (
-        <button type="submit" disabled={!text.trim()} className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg bg-theme-primary text-theme-background hover:bg-theme-accent transition-colors disabled:opacity-40" aria-label="Send">
-          <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+        <button type="submit" disabled={!text.trim()} className="group/send absolute bottom-[9px] right-[8px] w-10 h-10 flex items-center justify-center rounded-lg bg-theme-primary text-theme-background hover:bg-theme-accent transition-colors duration-300 disabled:opacity-70" aria-label="Send">
+          <svg className="h-5 w-5 transition-transform duration-200 group-hover/send:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
         </button>
       )}
     </form>

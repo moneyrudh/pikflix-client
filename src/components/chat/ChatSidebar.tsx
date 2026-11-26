@@ -44,7 +44,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeId, isGuest, isO
         }`}
       >
         {/* Same height and bottom border as the chat header, so the two read as one bar */}
-        <div className="h-16 shrink-0 flex items-center justify-between pl-5 pr-2 border-b border-theme-text/5">
+        <div className="h-16 shrink-0 flex items-center justify-between pl-6 pr-2 border-b border-theme-text/5">
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a full load resets the search page */}
           <a href="/" className="text-theme-primary font-bold text-2xl tracking-tighter hover:text-theme-accent transition-colors">pikflix</a>
           <button type="button" onClick={onClose} className="md:hidden w-11 h-11 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-theme-text" aria-label="Close chats">
@@ -56,7 +56,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeId, isGuest, isO
           <button
             type="button"
             onClick={onNewChat}
-            className="h-11 flex items-center gap-2.5 px-3.5 rounded-xl bg-theme-surface border border-theme-text/10 text-sm font-medium text-theme-text hover:border-theme-primary/40 transition-colors"
+            className="h-11 flex items-center gap-2.5 px-3 rounded-xl bg-theme-surface border border-theme-text/10 text-sm font-medium text-theme-text hover:border-theme-primary/40 transition-colors"
           >
             <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
             New chat

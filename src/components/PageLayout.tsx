@@ -11,9 +11,9 @@ interface PageLayoutProps {
 const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen }) => {
   return (
     <div className="min-h-screen bg-theme-background">
-      {/* Full-width navbar - unchanged */}
-      <header className="fixed top-0 z-50 w-full border-none border-theme-text/5 bg-transparent">
-        <div className="w-full max-w-screen mx-auto px-8 lg:px-12 py-4 flex justify-between items-center">
+      {/* Same geometry as the chat header (64px tall, 24px from each edge), so switching pages doesn't shift it */}
+      <header className="fixed top-0 z-50 w-full bg-transparent">
+        <div className="w-full h-16 px-6 flex justify-between items-center">
           {/* A full page load on purpose: it resets the search. A client-side <Link> would keep the old results. */}
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/" className="flex items-center space-x-2 group">
@@ -22,7 +22,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen })
             </span>
           </a>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-3">
             <ModeSwitch />
             <ThemeSelector />
           </div>

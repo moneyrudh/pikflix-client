@@ -321,7 +321,7 @@ function Chat() {
 			/>
 
 			<div className={`flex-1 min-w-0 h-[100dvh] flex flex-col transition-[padding] duration-300 ${selectedItem ? 'xl:pr-[50%]' : ''}`}>
-				<header className="h-16 shrink-0 flex items-center justify-between gap-3 px-3 md:px-6 border-b border-theme-text/5">
+				<header className="h-16 shrink-0 flex items-center justify-between gap-3 pl-3 pr-6 md:px-6 border-b border-theme-text/5">
 					<div className="flex items-center gap-1 min-w-0">
 						<button type="button" onClick={() => setSidebarOpen(true)} className="md:hidden w-11 h-11 shrink-0 flex items-center justify-center rounded-lg text-theme-text" aria-label="Open chats">
 							<svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" /></svg>
@@ -340,7 +340,7 @@ function Chat() {
 					<div className="flex-1 overflow-y-auto flex flex-col justify-center">
 						<div className="mx-auto w-full max-w-3xl px-4 md:px-6 py-10 flex flex-col gap-8 animate-fade-in">
 							<div className="flex flex-col gap-2">
-								<h2 className="text-3xl font-bold tracking-tight">What are you in the mood for?</h2>
+								<h2 className="text-3xl font-bold tracking-tight">What are you in the <span className="gradient-text">mood</span> for?</h2>
 								<p className="text-theme-text-muted leading-relaxed max-w-lg">
 									Movies, shows, books and papers. Ask for picks, track down something half-remembered, or follow a thread from one to the next.
 								</p>
