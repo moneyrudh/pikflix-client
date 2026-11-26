@@ -491,19 +491,18 @@ function Home() {
 			</div>
 			{/* "Chat" before a search; after one, take the latest search into a chat. Flush with the bar's right
 			    edge. On hover the labels ease left and an arrow eases right into the space they leave, meeting
-			    halfway, so the arrow never passes the bar's edge. */}
-			<span className="chat-go-row relative flex items-center text-xs text-theme-text-muted/60 font-medium tracking-wide">
-				<span className="chat-go-label flex items-center gap-2">
-					{contentTypeLabel}{webSearchEnabled ? ' · Web Search' : ''}
-					<span aria-hidden="true" className="text-theme-text-muted/30">|</span>
-					<Link
-						href={sessionHistory.length > 0 ? `/chat?q=${encodeURIComponent(sessionHistory[sessionHistory.length - 1].query)}` : '/chat'}
-						className="chat-go text-theme-primary font-semibold"
-					>
-						{sessionHistory.length > 0 ? 'Continue in chat' : 'Chat'}
-					</Link>
-				</span>
-				<span className="chat-go-arrow" aria-hidden="true">→</span>
+			    halfway, so the arrow never passes the bar's edge. The link's own box never moves (only its text
+			    does), so a pointer at its edge can't fall off it and make the hover flicker. */}
+			<span className="chat-go-row flex items-center gap-2 text-xs text-theme-text-muted/60 font-medium tracking-wide">
+				<span className="chat-go-shift">{contentTypeLabel}{webSearchEnabled ? ' · Web Search' : ''}</span>
+				<span aria-hidden="true" className="chat-go-shift text-theme-text-muted/30">|</span>
+				<Link
+					href={sessionHistory.length > 0 ? `/chat?q=${encodeURIComponent(sessionHistory[sessionHistory.length - 1].query)}` : '/chat'}
+					className="chat-go relative text-theme-primary font-semibold"
+				>
+					<span className="chat-go-shift chat-go-text">{sessionHistory.length > 0 ? 'Continue in chat' : 'Chat'}</span>
+					<span className="chat-go-arrow" aria-hidden="true">→</span>
+				</Link>
 			</span>
 		</div>
 	);

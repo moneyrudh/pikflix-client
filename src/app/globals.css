@@ -195,60 +195,51 @@ a {
 
 /* Search page: the "Chat" / "Continue in chat" link under the search bar, flush with the bar's right edge.
    On hover the text glows, the labels ease 15px left and an arrow eases 15px right from behind the text
-   into the space they leave, so the two meet halfway and the arrow ends exactly at the edge. */
-.chat-go {
-  position: relative;
-  transition: text-shadow 250ms ease, filter 250ms ease;
+   into the space they leave, so the two meet halfway and the arrow ends exactly at the edge.
+   Only the text moves: the link's box stays put, so the hover can't flicker at its edge. */
+.chat-go-shift {
+  display: inline-block;
+  transition: transform 350ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* Invisible hit area reaching over the arrow's spot. The link itself slides left on hover; without this,
-   a pointer at its right edge falls off it, the hover ends, the link slides back under the pointer, and
-   it jitters. It also makes the arrow clickable. */
-.chat-go::after {
-  content: '';
-  position: absolute;
-  top: -6px;
-  bottom: -6px;
-  left: 0;
-  right: -18px;
+.chat-go-text {
+  transition: transform 350ms cubic-bezier(0.2, 0.7, 0.2, 1), text-shadow 250ms ease, filter 250ms ease;
 }
 
-.chat-go:hover,
 .chat-go:focus-visible {
   outline: none;
-  filter: brightness(1.15);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
-.chat-go-label {
-  transition: transform 350ms cubic-bezier(0.2, 0.7, 0.2, 1);
+.chat-go:hover .chat-go-text,
+.chat-go:focus-visible .chat-go-text {
+  filter: brightness(1.15);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
 .chat-go-arrow {
   position: absolute;
   right: 0;
   top: 50%;
-  color: var(--color-primary);
-  font-weight: 600;
   opacity: 0;
   pointer-events: none;
   transform: translate(-15px, -50%);
   transition: transform 350ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 200ms ease;
 }
 
-.chat-go-row:has(.chat-go:hover) .chat-go-label,
-.chat-go-row:has(.chat-go:focus-visible) .chat-go-label {
+.chat-go-row:has(.chat-go:hover) .chat-go-shift,
+.chat-go-row:has(.chat-go:focus-visible) .chat-go-shift {
   transform: translateX(-15px);
 }
 
-.chat-go-row:has(.chat-go:hover) .chat-go-arrow,
-.chat-go-row:has(.chat-go:focus-visible) .chat-go-arrow {
+.chat-go:hover .chat-go-arrow,
+.chat-go:focus-visible .chat-go-arrow {
   opacity: 1;
   transform: translate(0, -50%);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chat-go-label,
+  .chat-go-shift,
+  .chat-go-text,
   .chat-go-arrow {
     transition: opacity 200ms ease;
   }
