@@ -175,6 +175,8 @@ a {
 /* Header: the Search/Chat icon itself grows and glows on hover or keyboard focus: no background or box,
    just the icon's own outline lit in the theme's accent. Springs in quickly, settles back more slowly. */
 .mode-link svg {
+  /* A transparent shadow at rest, so the glow interpolates in step with the grow instead of lagging behind it */
+  filter: drop-shadow(0 0 0 transparent);
   transition: transform 300ms ease, filter 300ms ease;
 }
 
@@ -188,53 +190,56 @@ a {
 .mode-link:focus-visible svg {
   transform: scale(1.2);
   filter: drop-shadow(0 0 3px color-mix(in srgb, var(--color-primary) 80%, transparent));
-  transition: transform 200ms cubic-bezier(0.3, 1.4, 0.5, 1), filter 200ms ease;
+  transition: transform 200ms cubic-bezier(0.3, 1.4, 0.5, 1), filter 200ms cubic-bezier(0.3, 1.4, 0.5, 1);
 }
 
-/* Search page: the "Chat" / "Continue in chat" link under the search bar. On hover the text brightens with a
-   soft glow and an arrow slides out from behind its end, inside a clip window outside the link's box,
-   so nothing around it moves. */
-.chat-go {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  transition: text-shadow 250ms ease, filter 250ms ease;
+/* Search page: the "Chat" / "Continue in chat" link under the search bar, flush with the bar's right edge.
+   On hover the text glows, the labels ease 15px left and an arrow eases 15px right from behind the text
+   into the space they leave, so the two meet halfway and the arrow ends exactly at the edge.
+   Only the text moves: the link's box stays put, so the hover can't flicker at its edge. */
+.chat-go-shift {
+  display: inline-block;
+  transition: transform 350ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.chat-go-window {
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  margin-left: 4px;
-  width: 12px;
-  height: 14px;
-  overflow: hidden;
-  transform: translateY(-50%);
-  pointer-events: none;
+.chat-go-text {
+  transition: transform 350ms cubic-bezier(0.2, 0.7, 0.2, 1), text-shadow 250ms ease, filter 250ms ease;
+}
+
+.chat-go:focus-visible {
+  outline: none;
+}
+
+.chat-go:hover .chat-go-text,
+.chat-go:focus-visible .chat-go-text {
+  filter: brightness(1.15);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
 .chat-go-arrow {
-  display: block;
-  line-height: 14px;
+  position: absolute;
+  right: 0;
+  top: 50%;
   opacity: 0;
-  transform: translateX(-110%);
-  transition: transform 350ms cubic-bezier(0.3, 1.4, 0.5, 1), opacity 200ms ease;
+  pointer-events: none;
+  transform: translate(-15px, -50%);
+  transition: transform 350ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 200ms ease;
 }
 
-.chat-go:hover,
-.chat-go:focus-visible {
-  outline: none;
-  filter: brightness(1.15);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 45%, transparent);
+.chat-go-row:has(.chat-go:hover) .chat-go-shift,
+.chat-go-row:has(.chat-go:focus-visible) .chat-go-shift {
+  transform: translateX(-15px);
 }
 
 .chat-go:hover .chat-go-arrow,
 .chat-go:focus-visible .chat-go-arrow {
   opacity: 1;
-  transform: none;
+  transform: translate(0, -50%);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .chat-go-shift,
+  .chat-go-text,
   .chat-go-arrow {
     transition: opacity 200ms ease;
   }

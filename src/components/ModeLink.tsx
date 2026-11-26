@@ -19,7 +19,7 @@ const ModeLink: React.FC = () => {
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {onChat
           ? <path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-          : <path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z" />}
+          : <path d="M7.9 20A9 9 0 104 16.1L2 22z" />}
       </svg>
     </Link>
   );
