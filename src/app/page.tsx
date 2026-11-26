@@ -489,18 +489,21 @@ function Home() {
 					</svg>
 				</button>
 			</div>
-			<span className="flex items-center gap-2 text-xs text-theme-text-muted/60 font-medium tracking-wide">
-				{contentTypeLabel}{webSearchEnabled ? ' · Web Search' : ''}
-				<span aria-hidden="true" className="text-theme-text-muted/30">|</span>
-				{/* "Chat" before a search; after one, take the latest search into a chat. The arrow slides out on
-				    hover into the space kept free by the margin, so nothing in the row moves. */}
-				<Link
-					href={sessionHistory.length > 0 ? `/chat?q=${encodeURIComponent(sessionHistory[sessionHistory.length - 1].query)}` : '/chat'}
-					className="chat-go mr-4 text-theme-primary font-semibold"
-				>
-					{sessionHistory.length > 0 ? 'Continue in chat' : 'Chat'}
-					<span className="chat-go-window" aria-hidden="true"><span className="chat-go-arrow">→</span></span>
-				</Link>
+			{/* "Chat" before a search; after one, take the latest search into a chat. Flush with the bar's right
+			    edge. On hover the labels ease left and an arrow eases right into the space they leave, meeting
+			    halfway, so the arrow never passes the bar's edge. */}
+			<span className="chat-go-row relative flex items-center text-xs text-theme-text-muted/60 font-medium tracking-wide">
+				<span className="chat-go-label flex items-center gap-2">
+					{contentTypeLabel}{webSearchEnabled ? ' · Web Search' : ''}
+					<span aria-hidden="true" className="text-theme-text-muted/30">|</span>
+					<Link
+						href={sessionHistory.length > 0 ? `/chat?q=${encodeURIComponent(sessionHistory[sessionHistory.length - 1].query)}` : '/chat'}
+						className="chat-go text-theme-primary font-semibold"
+					>
+						{sessionHistory.length > 0 ? 'Continue in chat' : 'Chat'}
+					</Link>
+				</span>
+				<span className="chat-go-arrow" aria-hidden="true">→</span>
 			</span>
 		</div>
 	);

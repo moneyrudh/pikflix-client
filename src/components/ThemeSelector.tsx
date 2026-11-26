@@ -47,7 +47,8 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ leading }) => {
             {leading && (
                 <>
                     <div className="relative z-10 flex items-center pl-[3px]">{leading}</div>
-                    <span aria-hidden="true" className="relative mx-1.5 h-5 w-px bg-theme-text/15" />
+                    {/* Spaced so the link's icon sits as far from the first theme icon as the theme icons are from each other */}
+                    <span aria-hidden="true" className="relative ml-1.5 mr-0.5 h-5 w-px bg-theme-text/15" />
                 </>
             )}
 
