@@ -489,8 +489,18 @@ function Home() {
 					</svg>
 				</button>
 			</div>
-			<span className="text-xs text-theme-text-muted/60 font-medium tracking-wide">
+			<span className="flex items-center gap-2 text-xs text-theme-text-muted/60 font-medium tracking-wide">
 				{contentTypeLabel}{webSearchEnabled ? ' · Web Search' : ''}
+				<span aria-hidden="true" className="text-theme-text-muted/30">|</span>
+				{/* "Chat" before a search; after one, take the latest search into a chat. The arrow slides out on
+				    hover into the space kept free by the margin, so nothing in the row moves. */}
+				<Link
+					href={sessionHistory.length > 0 ? `/chat?q=${encodeURIComponent(sessionHistory[sessionHistory.length - 1].query)}` : '/chat'}
+					className="chat-go mr-4 text-theme-primary font-semibold"
+				>
+					{sessionHistory.length > 0 ? 'Continue in chat' : 'Chat'}
+					<span className="chat-go-window" aria-hidden="true"><span className="chat-go-arrow">→</span></span>
+				</Link>
 			</span>
 		</div>
 	);
@@ -611,23 +621,6 @@ function Home() {
 									<p>{error.message}</p>
 								</div>
 							</div>
-						)}
-
-						{/* Take the latest search into a chat, where it can be followed up, compared or traced to its source */}
-						{!isSearching && sessionHistory.length > 0 && (
-							<Link
-								href={`/chat?q=${encodeURIComponent(sessionHistory[sessionHistory.length - 1].query)}`}
-								className="mx-auto mt-6 w-full max-w-2xl flex items-center gap-4 rounded-2xl border border-theme-text/10 bg-theme-surface p-4 text-theme-text hover:border-theme-primary/40 transition-colors animate-fade-in"
-							>
-								<span className="flex items-center justify-center w-11 h-11 shrink-0 rounded-xl bg-theme-primary/10 text-theme-primary">
-									<svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z" /></svg>
-								</span>
-								<span className="flex-1 flex flex-col gap-0.5">
-									<span className="font-semibold text-[15px]">Continue in chat</span>
-									<span className="text-sm text-theme-text-muted">Ask follow-ups, compare picks, or find the books behind them</span>
-								</span>
-								<svg className="w-5 h-5 shrink-0 text-theme-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
-							</Link>
 						)}
 
 						{uiState === UIState.SEARCHED && (sessionHistory.length > 0 || (currentItems && currentItems.length > 0)) && (

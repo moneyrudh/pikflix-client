@@ -1,6 +1,6 @@
 // components/PageLayout.tsx
 import React from 'react';
-import ModeSwitch from './ModeSwitch';
+import ModeLink from './ModeLink';
 import ThemeSelector from './ThemeSelector';
 
 interface PageLayoutProps {
@@ -22,10 +22,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, isDetailsPanelOpen })
             </span>
           </a>
           
-          <div className="flex items-center gap-3">
-            <ModeSwitch />
-            <ThemeSelector />
-          </div>
+          <ThemeSelector leading={<ModeLink />} />
         </div>
       </header>
       

@@ -3,7 +3,12 @@ import React from 'react';
 import { useTheme } from '@/lib/ThemeContext';
 import { useEffect, useState } from 'react';
 
-const ThemeSelector: React.FC = () => {
+interface ThemeSelectorProps {
+    // Shown at the start of the same capsule, before a divider (the header puts the Search/Chat link here)
+    leading?: React.ReactNode;
+}
+
+const ThemeSelector: React.FC<ThemeSelectorProps> = ({ leading }) => {
     const { theme, setTheme, ready } = useTheme();
     // The slider appears at the saved theme without sliding there, then animates on later changes
     const [animate, setAnimate] = useState(false);
@@ -33,12 +38,20 @@ const ThemeSelector: React.FC = () => {
     };
 
     return (
-        <div className="relative">
-            <div className="w-[130px] h-10 rounded-full bg-theme-surface border border-theme-text/10 relative overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.1)]">
-                {/* Create cylindrical 3D effect with gradients */}
-                <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/5 rounded-full pointer-events-none"></div>
-                <div className="absolute inset-x-0 top-0 h-[1px] bg-white/20 rounded-full pointer-events-none"></div>
-                <div className="absolute inset-x-0 bottom-0 h-[1px] bg-black/10 rounded-full pointer-events-none"></div>
+        <div className="relative flex items-center h-10 rounded-full bg-theme-surface border border-theme-text/10 overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.1)]">
+            {/* Create cylindrical 3D effect with gradients (clipped to the capsule's rounded ends) */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/5 rounded-full pointer-events-none"></div>
+            <div className="absolute inset-x-0 top-0 h-[1px] bg-white/20 rounded-full pointer-events-none"></div>
+            <div className="absolute inset-x-0 bottom-0 h-[1px] bg-black/10 rounded-full pointer-events-none"></div>
+
+            {leading && (
+                <>
+                    <div className="relative z-10 flex items-center pl-[3px]">{leading}</div>
+                    <span aria-hidden="true" className="relative mx-1.5 h-5 w-px bg-theme-text/15" />
+                </>
+            )}
+
+            <div className="relative w-[130px] h-full">
                 
                 {/* Circular indicator that moves between positions */}
                 <div 
