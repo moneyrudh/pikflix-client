@@ -2,7 +2,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChatSummary } from '@/types/chat';
-import ThemeSelector from '../ThemeSelector';
 
 interface ChatSidebarProps {
   chats: ChatSummary[];
@@ -43,8 +42,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeId, isGuest, isO
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        {/* Same height and bottom border as the chat header, so the two read as one bar */}
-        <div className="h-16 shrink-0 flex items-center justify-between pl-6 pr-2 border-b border-theme-text/5">
+        {/* Same height as the chat header, so the logo lines up with the header's controls */}
+        <div className="h-16 shrink-0 flex items-center justify-between pl-6 pr-2">
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a full load resets the search page */}
           <a href="/" className="text-theme-primary font-bold text-2xl tracking-tighter hover:text-theme-accent transition-colors">pikflix</a>
           <button type="button" onClick={onClose} className="md:hidden w-11 h-11 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-theme-text" aria-label="Close chats">
@@ -95,8 +94,6 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ chats, activeId, isGuest, isO
               You&apos;re chatting as a guest. Chats are kept for 30 days after you last use them.
             </p>
           )}
-          {/* Phones only: on wider screens the theme picker sits in the header */}
-          <div className="md:hidden px-1"><ThemeSelector /></div>
         </div>
       </nav>
     </>

@@ -4,7 +4,7 @@
 import React, { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ContentDetailsPanel from '@/components/ContentDetailsPanel';
-import ModeSwitch from '@/components/ModeSwitch';
+import ModeLink from '@/components/ModeLink';
 import ThemeSelector from '@/components/ThemeSelector';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import ChatComposer from '@/components/chat/ChatComposer';
@@ -321,7 +321,7 @@ function Chat() {
 			/>
 
 			<div className={`flex-1 min-w-0 h-[100dvh] flex flex-col transition-[padding] duration-300 ${selectedItem ? 'xl:pr-[50%]' : ''}`}>
-				<header className="h-16 shrink-0 flex items-center justify-between gap-3 pl-3 pr-6 md:px-6 border-b border-theme-text/5">
+				<header className="h-16 shrink-0 flex items-center justify-between gap-3 pl-3 pr-6 md:px-6">
 					<div className="flex items-center gap-1 min-w-0">
 						<button type="button" onClick={() => setSidebarOpen(true)} className="md:hidden w-11 h-11 shrink-0 flex items-center justify-center rounded-lg text-theme-text" aria-label="Open chats">
 							<svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" /></svg>
@@ -329,10 +329,8 @@ function Chat() {
 						{/* An empty chat has no title yet; the sidebar's "New chat" already says where you are */}
 						{title && <h1 className="text-[15px] font-medium truncate animate-fade-in">{title}</h1>}
 					</div>
-					<div className="flex items-center gap-3 shrink-0">
-						<ModeSwitch />
-						<div className="hidden md:block"><ThemeSelector /></div>
-					</div>
+					{/* Always top right, phones included: the Search link and the themes share one capsule */}
+					<div className="shrink-0"><ThemeSelector leading={<ModeLink />} /></div>
 				</header>
 
 				{isEmpty ? (
