@@ -197,7 +197,20 @@ a {
    On hover the text glows, the labels ease 15px left and an arrow eases 15px right from behind the text
    into the space they leave, so the two meet halfway and the arrow ends exactly at the edge. */
 .chat-go {
+  position: relative;
   transition: text-shadow 250ms ease, filter 250ms ease;
+}
+
+/* Invisible hit area reaching over the arrow's spot. The link itself slides left on hover; without this,
+   a pointer at its right edge falls off it, the hover ends, the link slides back under the pointer, and
+   it jitters. It also makes the arrow clickable. */
+.chat-go::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: 0;
+  right: -18px;
 }
 
 .chat-go:hover,
