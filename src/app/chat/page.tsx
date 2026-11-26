@@ -1,10 +1,11 @@
 'use client';
 // app/chat/page.tsx
 // The agent chat. `?id=` opens a stored chat; `?q=` starts a new one with that message ("Continue in chat").
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import ContentDetailsPanel from '@/components/ContentDetailsPanel';
+import ModeSwitch from '@/components/ModeSwitch';
+import ThemeSelector from '@/components/ThemeSelector';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import ChatComposer from '@/components/chat/ChatComposer';
 import { ReplyBlocks, StatusLines } from '@/components/chat/ChatBlocks';
@@ -53,6 +54,9 @@ function Chat() {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const stickToBottomRef = useRef(true);
 	const startedFromQueryRef = useRef(false);
+	const [showJump, setShowJump] = useState(false); // scrolled away from the latest message
+	const composerRef = useRef<HTMLDivElement>(null);
+	const composerTopRef = useRef<number | null>(null); // where the centered input was, to slide it down from
 	const generationRef = useRef(0); // bumped when the open chat changes: a reply still finishing must not touch the new one
 
 	const refreshChats = useCallback(async () => {
@@ -155,6 +159,7 @@ function Chat() {
 		setLoadError(null);
 		stickToBottomRef.current = true;
 		streamingIdRef.current = chatId;
+		if (turns.length === 0) composerTopRef.current = composerRef.current?.getBoundingClientRect().top ?? null;
 		setTurns(prev => [...prev, { role: 'user', text: message }, { role: 'assistant', slots: [], statuses: [], streaming: true, error: null }]);
 
 		const controller = new AbortController();
@@ -261,7 +266,47 @@ function Chat() {
 		return () => window.removeEventListener('keydown', onKeyDown);
 	}, [closeItem]);
 
+	const isEmpty = turns.length === 0 && !chatId && !loadError;
+
+	// The first message moves the input from the middle of the empty page to the bottom: slide it there
+	useLayoutEffect(() => {
+		const from = composerTopRef.current;
+		composerTopRef.current = null;
+		const el = composerRef.current;
+		if (isEmpty || from === null || !el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		const delta = from - el.getBoundingClientRect().top;
+		if (Math.abs(delta) > 4) {
+			el.animate([{ transform: `translateY(${delta}px)` }, { transform: 'none' }], { duration: 450, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' });
+		}
+	}, [isEmpty]);
+
+	// The tab shows the open chat's title
+	useEffect(() => {
+		const previous = document.title;
+		document.title = title ? `${title} · pikflix` : 'Chat · pikflix';
+		return () => { document.title = previous; };
+	}, [title]);
+
+	const jumpToLatest = () => {
+		const el = scrollRef.current;
+		if (!el) return;
+		stickToBottomRef.current = true;
+		setShowJump(false);
+		el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+	};
+
 	const lastIndex = turns.length - 1;
+
+	const composer = (
+		<div ref={composerRef}>
+			<ChatComposer
+				busy={busy}
+				placeholder={turns.length ? 'Ask a follow-up…' : 'Describe what you want…'}
+				onSend={send}
+				onStop={() => abortRef.current?.abort()}
+			/>
+		</div>
+	);
 
 	return (
 		<div className="flex min-h-[100dvh] bg-theme-background text-theme-text">
@@ -276,83 +321,95 @@ function Chat() {
 			/>
 
 			<div className={`flex-1 min-w-0 h-[100dvh] flex flex-col transition-[padding] duration-300 ${selectedItem ? 'xl:pr-[50%]' : ''}`}>
-				<header className="flex items-center justify-between gap-3 px-3 md:px-8 py-3 border-b border-theme-text/5">
+				<header className="h-16 shrink-0 flex items-center justify-between gap-3 px-3 md:px-6 border-b border-theme-text/5">
 					<div className="flex items-center gap-1 min-w-0">
 						<button type="button" onClick={() => setSidebarOpen(true)} className="md:hidden w-11 h-11 shrink-0 flex items-center justify-center rounded-lg text-theme-text" aria-label="Open chats">
 							<svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" /></svg>
 						</button>
-						<h1 className="text-[15px] font-medium truncate">{title ?? 'New chat'}</h1>
+						{/* An empty chat has no title yet; the sidebar's "New chat" already says where you are */}
+						{title && <h1 className="text-[15px] font-medium truncate animate-fade-in">{title}</h1>}
 					</div>
 					<div className="flex items-center gap-3 shrink-0">
-						<Link href="/" className="text-sm text-theme-text-muted hover:text-theme-text px-2 py-3">Search</Link>
+						<ModeSwitch />
+						<div className="hidden md:block"><ThemeSelector /></div>
 					</div>
 				</header>
 
-				<div
-					ref={scrollRef}
-					onScroll={e => {
-						const el = e.currentTarget;
-						stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-					}}
-					className="flex-1 overflow-y-auto"
-				>
-					<div className="mx-auto w-full max-w-3xl px-4 md:px-6 pt-8 pb-10 flex flex-col gap-5">
-						{loadError && <p role="alert" className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500">{loadError}</p>}
+				{isEmpty ? (
+					// Empty chat: greeting, input and starters together in the middle
+					<div className="flex-1 overflow-y-auto flex flex-col justify-center">
+						<div className="mx-auto w-full max-w-3xl px-4 md:px-6 py-10 flex flex-col gap-8 animate-fade-in">
+							<div className="flex flex-col gap-2">
+								<h2 className="text-3xl font-bold tracking-tight">What are you in the mood for?</h2>
+								<p className="text-theme-text-muted leading-relaxed max-w-lg">
+									Movies, shows, books and papers. Ask for picks, track down something half-remembered, or follow a thread from one to the next.
+								</p>
+							</div>
+							{composer}
+							<div className="flex flex-col sm:flex-row gap-2 -mt-4">
+								{STARTERS.map(starter => (
+									<button key={starter} type="button" onClick={() => send(starter)} className="flex-1 min-h-[52px] text-left px-4 py-3 rounded-xl bg-theme-surface/60 border border-theme-text/10 text-sm text-theme-text/80 hover:text-theme-text hover:border-theme-primary/40 transition-colors">
+										{starter}
+									</button>
+								))}
+							</div>
+							{guest && <p className="-mt-4 text-xs text-theme-text-muted">Guest chats are kept for 30 days.</p>}
+						</div>
+					</div>
+				) : (
+					<>
+						<div className="relative flex-1 min-h-0">
+							<div
+								ref={scrollRef}
+								onScroll={e => {
+									const el = e.currentTarget;
+									const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+									stickToBottomRef.current = atBottom;
+									setShowJump(!atBottom);
+								}}
+								className="h-full overflow-y-auto scroll-fade"
+							>
+								<div className="mx-auto w-full max-w-3xl px-4 md:px-6 pt-8 pb-10 flex flex-col gap-5">
+									{loadError && <p role="alert" className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500">{loadError}</p>}
 
-						{turns.length === 0 && !loadError && !chatId && (
-							<div className="flex flex-col gap-6 pt-[12vh] animate-fade-in">
-								<div className="flex flex-col gap-2">
-									<h2 className="text-3xl font-bold tracking-tight">What are you in the mood for?</h2>
-									<p className="text-theme-text-muted leading-relaxed max-w-lg">
-										Movies, shows, books and papers. Ask for picks, track down something half-remembered, or follow a thread from one to the next.
-									</p>
-								</div>
-								<div className="flex flex-col sm:flex-row gap-2">
-									{STARTERS.map(starter => (
-										<button key={starter} type="button" onClick={() => send(starter)} className="flex-1 min-h-[52px] text-left px-4 py-3 rounded-xl bg-theme-surface border border-theme-text/10 text-sm hover:border-theme-primary/40 transition-colors">
-											{starter}
-										</button>
+									{turns.map((turn, i) => turn.role === 'user' ? (
+										<div key={i} className={`self-end max-w-[85%] md:max-w-[78%] px-4 py-3 rounded-[18px] rounded-br-[4px] bg-theme-surface text-[15px] leading-normal whitespace-pre-wrap break-words animate-message-in ${i > 0 ? 'mt-4' : ''}`}>
+											{turn.text}
+										</div>
+									) : (
+										<div key={i} className="flex flex-col gap-4">
+											<StatusLines statuses={turn.statuses} working={turn.streaming && turn.slots.length === 0} />
+											{turn.streaming && turn.statuses.length === 0 && turn.slots.length === 0 && (
+												<p className="text-[13px] text-shimmer animate-fade-in" aria-live="polite">Thinking…</p>
+											)}
+											<ReplyBlocks
+												slots={turn.slots}
+												onOpen={openItem}
+												onAnswer={i === lastIndex && !busy ? send : undefined}
+											/>
+											{turn.error && <p role="alert" className="text-sm text-red-500">{turn.error}</p>}
+										</div>
 									))}
 								</div>
 							</div>
-						)}
 
-						{turns.map((turn, i) => turn.role === 'user' ? (
-							<div key={i} className={`self-end max-w-[85%] md:max-w-[78%] px-4 py-3 rounded-[18px] rounded-br-[4px] bg-theme-surface text-[15px] leading-normal whitespace-pre-wrap break-words ${i > 0 ? 'mt-4' : ''}`}>
-								{turn.text}
-							</div>
-						) : (
-							<div key={i} className="flex flex-col gap-4">
-								<StatusLines statuses={turn.statuses} working={turn.streaming && turn.slots.length === 0} />
-								{turn.streaming && turn.statuses.length === 0 && turn.slots.length === 0 && (
-									<div className="flex gap-1.5 py-2" aria-label="Thinking">
-										{[0, 150, 300].map(delay => (
-											<span key={delay} className="w-2 h-2 rounded-full bg-theme-text-muted animate-pulse" style={{ animationDelay: `${delay}ms` }} />
-										))}
-									</div>
-								)}
-								<ReplyBlocks
-									slots={turn.slots}
-									onOpen={openItem}
-									onAnswer={i === lastIndex && !busy ? send : undefined}
-								/>
-								{turn.error && <p role="alert" className="text-sm text-red-500">{turn.error}</p>}
-							</div>
-						))}
-					</div>
-				</div>
+							{showJump && (
+								<button
+									type="button"
+									onClick={jumpToLatest}
+									className="absolute bottom-3 left-1/2 -translate-x-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-theme-surface border border-theme-text/10 text-theme-text-muted hover:text-theme-text shadow-[0_4px_14px_var(--shadow-color)] animate-fade-in"
+									aria-label="Jump to latest message"
+								>
+									<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7" /></svg>
+								</button>
+							)}
+						</div>
 
-				<div className="mx-auto w-full max-w-3xl px-4 md:px-6 pb-4 md:pb-6">
-					<ChatComposer
-						busy={busy}
-						placeholder={turns.length ? 'Ask a follow-up…' : 'Describe what you want…'}
-						onSend={send}
-						onStop={() => abortRef.current?.abort()}
-					/>
-					{guest && turns.length === 0 && (
-						<p className="mt-2.5 text-center text-xs text-theme-text-muted">Guest chats are kept for 30 days.</p>
-					)}
-				</div>
+						<div className="mx-auto w-full max-w-3xl px-4 md:px-6 pt-2 pb-4 md:pb-6">
+							{composer}
+						</div>
+					</>
+				)}
 			</div>
 
 			<ContentDetailsPanel item={selectedItem} isOpen={selectedItem !== null} onClose={closeItem} />
