@@ -1,5 +1,6 @@
 // app/api/providers/route.ts
 import { NextRequest } from 'next/server';
+import { BACKEND_URL, backendHeaders } from '@/lib/backend';
 import { ContentType } from '@/types/content';
 
 export const runtime = 'edge';
@@ -16,13 +17,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
-
-    const response = await fetch(`${apiUrl}/api/providers/`, {
+    const response = await fetch(`${BACKEND_URL}/api/providers/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: backendHeaders(req, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ content_id, content_type, region }),
     });
 

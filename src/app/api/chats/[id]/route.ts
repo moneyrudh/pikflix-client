@@ -1,5 +1,6 @@
 // app/api/chats/[id]/route.ts
 import { NextRequest } from 'next/server';
+import { BACKEND_URL, backendHeaders } from '@/lib/backend';
 
 export const runtime = 'edge';
 
@@ -16,8 +17,7 @@ async function forward(req: NextRequest, params: Promise<{ id: string }>, method
   }
 
   try {
-    const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
-    const response = await fetch(`${apiUrl}/api/chats/${id}`, { method, headers: { Authorization: authorization } });
+    const response = await fetch(`${BACKEND_URL}/api/chats/${id}`, { method, headers: backendHeaders(req, { Authorization: authorization }) });
     if (!response.ok) {
       return Response.json({ error: response.status === 404 ? 'Chat not found' : 'Something went wrong' }, { status: response.status });
     }

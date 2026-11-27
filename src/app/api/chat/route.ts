@@ -1,5 +1,6 @@
 // app/api/chat/route.ts
 import { NextRequest } from 'next/server';
+import { BACKEND_URL, backendHeaders } from '@/lib/backend';
 
 export const runtime = 'edge';
 
@@ -12,10 +13,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const { message, session_id } = await req.json();
-    const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
-    const response = await fetch(`${apiUrl}/api/chat`, {
+    const response = await fetch(`${BACKEND_URL}/api/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: authorization },
+      headers: backendHeaders(req, { 'Content-Type': 'application/json', Authorization: authorization }),
       body: JSON.stringify({ message, session_id }),
       signal: req.signal, // the backend stops Claude and its tools when the user leaves
     });

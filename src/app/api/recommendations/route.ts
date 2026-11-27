@@ -1,5 +1,6 @@
 // app/api/recommendations/route.ts
 import { NextRequest } from 'next/server';
+import { BACKEND_URL, backendHeaders } from '@/lib/backend';
 import { MediaType } from '@/types/content';
 
 export const runtime = 'edge';
@@ -17,18 +18,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
-
     const requestBody: Record<string, unknown> = { query, media_types, web_search };
     if (history && history.length > 0) {
       requestBody.history = history;
     }
 
-    const response = await fetch(`${apiUrl}/api/recommendations/`, {
+    const response = await fetch(`${BACKEND_URL}/api/recommendations/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: backendHeaders(req, { 'Content-Type': 'application/json' }),
       body: JSON.stringify(requestBody),
       signal: req.signal, // stop the backend work when the user navigates away
     });
