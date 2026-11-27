@@ -1,5 +1,6 @@
 // app/api/chats/route.ts
 import { NextRequest } from 'next/server';
+import { BACKEND_URL, backendHeaders } from '@/lib/backend';
 
 export const runtime = 'edge';
 
@@ -11,8 +12,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const apiUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
-    const response = await fetch(`${apiUrl}/api/chats`, { headers: { Authorization: authorization } });
+    const response = await fetch(`${BACKEND_URL}/api/chats`, { headers: backendHeaders(req, { Authorization: authorization }) });
     if (!response.ok) {
       return Response.json({ error: "Couldn't load your chats" }, { status: response.status });
     }
