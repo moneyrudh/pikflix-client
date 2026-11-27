@@ -9,6 +9,7 @@ import {
 import { BlockSlot, ChatBlock, mediaContent } from '@/types/chat';
 import TypographicCover from '../TypographicCover';
 import Spinner from '../Spinner';
+import ChatLink from './ChatLink';
 
 type MediaBlock = Extract<ChatBlock, { type: 'media' }>;
 
@@ -32,11 +33,7 @@ function TextBlock({ text, streaming = false }: { text: string; streaming?: bool
         disallowedElements={['img']}
         unwrapDisallowed
         components={{
-          a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="text-theme-primary underline underline-offset-2 hover:text-theme-accent">
-              {children}
-            </a>
-          ),
+          a: ({ href, children }) => <ChatLink href={href}>{children}</ChatLink>,
         }}
       >
         {streaming ? text + CARET : text}
